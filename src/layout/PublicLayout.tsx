@@ -1,8 +1,8 @@
 // src/components/layout/PublicLayout.tsx
 import { Outlet } from 'react-router-dom';
 import { Box, Container } from '@mui/material';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import Header from '../components/layout/Header';
+import Footer from '../components/layout/Footer';
 
 const PublicLayout = () => {
   return (

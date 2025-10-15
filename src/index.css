@@ -1,0 +1,38 @@
+/* src/index.css */
+
+/* 
+  1. A modern CSS reset to remove browser defaults.
+*/
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* 
+  2. Set a base font and background for the whole app.
+*/
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f7f7f7; /* Optional: a light grey background */
+  line-height: 1.5;
+}
+
+/* 
+  3. Ensure images don't overflow their containers.
+*/
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* 
+  4. Make form elements inherit fonts for consistency.
+*/
+input, button, textarea, select {
+  font: inherit;
+}

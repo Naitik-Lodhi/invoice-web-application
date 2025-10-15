@@ -9,14 +9,15 @@ import {
 
 // Using generics for better type safety with react-hook-form
 interface FormFieldProps<T extends FieldValues> {
-  name: Path<T>; // Ensures name is a valid key of our form values
+  name: Path<T>;
   control: Control<T>;
   label: string;
-  type?: string;
+   type?: 'text' | 'email' | 'number' | 'tel';
   placeholder?: string;
   required?: boolean;
   maxLength?: number;
   rows?: number;
+   rules?: any;
 }
 
 const FormField = <T extends FieldValues>({
@@ -27,12 +28,14 @@ const FormField = <T extends FieldValues>({
   required = false,
   rows = 1,
   maxLength,
+  rules,
   ...props
 }: FormFieldProps<T>) => {
   return (
     <Controller
       name={name}
       control={control}
+      rules={rules}
       render={({ field, fieldState: { error } }) => (
         <Box sx={{ width: "100%", mb: 2.5 }}>
           {" "}
@@ -70,12 +73,12 @@ const FormField = <T extends FieldValues>({
               // For Webkit browsers (Chrome, Safari, Edge)
               "& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button":
                 {
-                  "-webkit-appearance": "none",
+                  "WebkitAppearance": "none",
                   margin: 0,
                 },
               // For Firefox
               "& input[type=number]": {
-                "-moz-appearance": "textfield",
+                "MozAppearance": "textfield",
               },
               // Previous styling for border-radius and height
               "& .MuiOutlinedInput-root": {

@@ -1,59 +1,51 @@
-// src/pages/auth/Signup.tsx
-import { useForm, type SubmitHandler } from "react-hook-form";
+// src/components/form/SignupForm.tsx
+import { Box, Typography, Link, Alert } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
-import { Box, Typography, Link } from "@mui/material";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { type Control, type FieldErrors } from 'react-hook-form';
 
-// Import custom components and schemas
-import AppButton from "../../components/AppButton";
-import FormField from "../../components/form/FormField";
-import PasswordField from "../../components/PasswordField";
-import FormHeader from "../../components/form/FormHeader";
-import {
-  signupSchema,
-  type SignupFormData,
-} from "../../utils/validationSchemas";
-import FileUploadField from "../../components/form/FileUploadField";
+import FormHeader from "./FormHeader";
+import FormField from "./FormField";
+import PasswordField from "./PasswordField";
+import FileUploadField from "./FileUploadField";
+import AppButton from "../AppButton";
 
-const Signup = () => {
-  const {
-    control,
-    handleSubmit,
-    formState: { isSubmitting },
-  } = useForm<SignupFormData>({
-    resolver: zodResolver(signupSchema), // Connect Zod schema with react-hook-form
-    mode: "onBlur",
-    // --- FIX IS HERE ---
-    // Explicitly define default values to avoid Zod's `undefined` error
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      password: "",
-      companyName: "",
-      address: "",
-      city: "",
-      zipCode: "",
-      industry: "",
-      currencySymbol: "",
-      // companyLogo: undefined, // Default for file input
-    },
-  });
+interface SignupFormProps {
+  control: Control<any>;
+  isSubmitting: boolean;
+  onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
+  error?: string;
+  errors?: FieldErrors;
+}
 
-  const onSubmit: SubmitHandler<SignupFormData> = (data) => {
-    console.log("Form Data:", data);
-    // Simulate API call
-    return new Promise((resolve) => setTimeout(resolve, 2000));
-  };
-
+export default function SignupForm({ 
+  control, 
+  isSubmitting, 
+  onSubmit, 
+  error,
+  errors 
+}: SignupFormProps) {
   return (
-    <Box sx={{ maxWidth: "900px", mx: "auto", px: 2, pb: 8 }}>
+   <Box sx={{ maxWidth: "900px", mx: "auto", px: 2, pb: 8 }}>
       <FormHeader
         title="Create Your Account"
         subtitle="Set up your company and start invoicing in minutes."
       />
 
-      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+      {/* Show general error if exists */}
+      {error && (
+        <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Show root error from form validation */}
+      {errors?.root && (
+        <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
+          {errors.root.message}
+        </Alert>
+      )}
+
+      <Box component="form" onSubmit={onSubmit} noValidate>
         <Box
           sx={{
             display: "flex",
@@ -122,7 +114,7 @@ const Signup = () => {
             <FormField
               name="address"
               control={control}
-              label="Address"
+              label="Company Address"
               required
               maxLength={500}
               rows={3}
@@ -134,17 +126,28 @@ const Signup = () => {
                 flexDirection: { xs: "column", sm: "row" },
               }}
             >
-              <FormField name="city" control={control} label="City" required maxLength={50} />
+              <FormField 
+                name="city" 
+                control={control} 
+                label="City" 
+                required 
+                maxLength={50} 
+              />
               <FormField
                 name="zipCode"
                 control={control}
                 label="Zip Code"
-                type="number"
+                type="text"  // Changed from "number" to "text" for better control
                 required
                 maxLength={6}
               />
             </Box>
-            <FormField name="industry" control={control} label="Industry" maxLength={50} />
+            <FormField 
+              name="industry" 
+              control={control} 
+              label="Industry" 
+              maxLength={50} 
+            />
             <FormField
               name="currencySymbol"
               control={control}
@@ -156,7 +159,7 @@ const Signup = () => {
           </Box>
         </Box>
 
-        {/* Buttons Section - YOUR LAYOUT */}
+        {/* Buttons Section */}
         <Box
           sx={{
             display: "flex",
@@ -170,8 +173,9 @@ const Signup = () => {
             <AppButton
               type="submit"
               isLoading={isSubmitting}
+              disabled={isSubmitting}
               sx={{
-                width: { xs: "100%", sm: "auto" }, // Full width on mobile
+                width: { xs: "100%", sm: "auto" },
               }}
             >
               Sign Up
@@ -191,6 +195,4 @@ const Signup = () => {
       </Box>
     </Box>
   );
-};
-
-export default Signup;
+}

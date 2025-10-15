@@ -1,0 +1,100 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`StatCard Component > Snapshot Tests > should match snapshot for basic card 1`] = `
+<div
+  class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiCard-root css-1c9z231-MuiPaper-root-MuiCard-root"
+  style="--Paper-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12);"
+>
+  <div
+    class="MuiCardContent-root css-1p1pav1-MuiCardContent-root"
+  >
+    <div
+      class="MuiBox-root css-1qdyvok"
+    >
+      <p
+        class="MuiTypography-root MuiTypography-body1 css-11cn1t9-MuiTypography-root"
+      >
+        Invoices
+      </p>
+    </div>
+    <div
+      class="MuiBox-root css-i30p6k"
+    >
+      <div
+        class="MuiTypography-root MuiTypography-h4 css-ih48ct-MuiTypography-root"
+      >
+        125
+      </div>
+    </div>
+    <div
+      class="MuiBox-root css-axw7ok"
+    >
+      <span
+        class="MuiTypography-root MuiTypography-caption css-1d4omqi-MuiTypography-root"
+      >
+        This Month
+      </span>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`StatCard Component > Snapshot Tests > should match snapshot for card with trend 1`] = `
+<div
+  class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiCard-root css-1c9z231-MuiPaper-root-MuiCard-root"
+  style="--Paper-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12);"
+>
+  <div
+    class="MuiCardContent-root css-1p1pav1-MuiCardContent-root"
+  >
+    <div
+      class="MuiBox-root css-1qdyvok"
+    >
+      <p
+        class="MuiTypography-root MuiTypography-body1 css-11cn1t9-MuiTypography-root"
+      >
+        Sales
+      </p>
+    </div>
+    <div
+      class="MuiBox-root css-i30p6k"
+    >
+      <div
+        class="MuiTypography-root MuiTypography-h4 css-ih48ct-MuiTypography-root"
+      >
+        $1,000
+      </div>
+    </div>
+    <div
+      class="MuiBox-root css-axw7ok"
+    >
+      <span
+        class="MuiTypography-root MuiTypography-caption css-1d4omqi-MuiTypography-root"
+      >
+        Week
+      </span>
+      <div
+        class="MuiBox-root css-ugu8rw"
+      >
+        <svg
+          aria-hidden="true"
+          class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1wdc28j-MuiSvgIcon-root"
+          data-testid="TrendingUpIcon"
+          focusable="false"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="m16 6 2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"
+          />
+        </svg>
+        <p
+          class="MuiTypography-root MuiTypography-body1 css-1j6cjbn-MuiTypography-root"
+        >
+          15
+          %
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+`;

@@ -1,41 +1,75 @@
 // src/constants/apiEndpoints.ts
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-/**
- * Base URL for the API.
- * It's a good practice to use environment variables for this.
- */
-export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-
-/**
- * Collection of all API endpoints used in the application.
- * Grouped by feature for better organization.
- */
 export const API_ENDPOINTS = {
-  // Authentication endpoints
+  // Auth endpoints
   auth: {
-    signup: '/auth/signup',
-    login: '/auth/login',
-    checkEmail: '/auth/check-email',
-    forgotPassword: '/auth/forgot-password',
-    resetPassword: '/auth/reset-password',
+    SIGNUP: '/Auth/Signup',
+    LOGIN: '/Auth/Login',
+    GET_COMPANY_LOGO: (companyId: number) => `/Auth/GetCompanyLogoUrl/${companyId}`,
+    GET_COMPANY_LOGO_THUMBNAIL: (companyId: number) => `/Auth/GetCompanyLogoThumbnailUrl/${companyId}`,
   },
 
-  // User management endpoints
-  users: {
-    getAll: '/users',
-    // Example of an endpoint with a dynamic parameter
-    getById: (userId: string) => `/users/${userId}`, 
+  // Item endpoints
+  items: {
+    GET_LIST: '/Item/GetList',
+    GET_LOOKUP_LIST: '/Item/GetLookupList',
+    GET_BY_ID: (id: number) => `/Item/${id}`,
+    CREATE: '/Item', // POST
+    UPDATE: '/Item', // PUT
+    DELETE: (id: number) => `/Item/${id}`, // DELETE
+    GET_PICTURE: (id: number) => `/Item/Picture/${id}`,
+    GET_PICTURE_THUMBNAIL: (id: number) => `/Item/PictureThumbnail/${id}`,
+     UPDATE_PICTURE: '/Item/UpdateItemPicture', 
+    CHECK_DUPLICATE_NAME: '/Item/CheckDuplicateItemName',
   },
 
-  // Invoice endpoints (future use)
+  // Invoice endpoints
   invoices: {
-    create: '/invoices',
-    getAll: '/invoices',
-    getById: (invoiceId: string) => `/invoices/${invoiceId}`,
-    update: (invoiceId: string) => `/invoices/${invoiceId}`,
-    delete: (invoiceId: string) => `/invoices/${invoiceId}`,
+    GET_LIST: '/Invoice/GetList',
+    GET_BY_ID: (id: number) => `/Invoice/${id}`,
+    CREATE: '/Invoice/', // POST
+    UPDATE: '/Invoice', // PUT
+    DELETE: (id:any) => `/Invoice/${id}`, // DELETE
+    GET_METRICS: '/Invoice/GetMetrices', // Note: API has typo "Metrices"
+    GET_TREND_12M: '/Invoice/GetTrend12m',
+    GET_TOP_ITEMS: '/Invoice/TopItems',
   },
-
-  // Add more features as the app grows
-  // e.g., clients, products, etc.
 };
+
+// export const API_ENDPOINTS = {
+//   // Auth endpoints
+//   auth: {
+//     SIGNUP: '/Auth/Signup',
+//     LOGIN: '/Auth/Login',
+//     GET_COMPANY_LOGO: (companyId: number) => `/Auth/GetCompanyLogoUrl/${companyId}`,
+//     GET_COMPANY_LOGO_THUMBNAIL: (companyId: number) => `/Auth/GetCompanyLogoThumbnailUrl/${companyId}`,
+//   },
+
+//   // Item endpoints
+//   items: {
+//     GET_LIST: '/Item/GetList',
+//     GET_LOOKUP_LIST: '/Item/GetLookupList',
+//     GET_BY_ID: (id: number) => `/Item/${id}`,
+//     CREATE: '/Item',
+//     UPDATE: '/Item',
+//     DELETE: (id: number) => `/Item/${id}`,
+//     GET_PICTURE: (id: number) => `/Item/GetPictureUrl/${id}`,
+//     GET_PICTURE_THUMBNAIL: (id: number) => `/Item/GetPictureThumbnailUrl/${id}`,
+//     UPDATE_PICTURE: '/Item/UpdateItemPicture',
+//     CHECK_DUPLICATE_NAME: '/Item/CheckDuplicateItemName',
+//   },
+
+//   // Invoice endpoints
+//   invoices: {
+//     GET_LIST: '/Invoice/GetList',
+//     GET_BY_ID: (id: number) => `/Invoice/${id}`,
+//     CREATE: '/Invoice',
+//     UPDATE: '/Invoice',
+//     DELETE: (id: number) => `/Invoice/${id}`,
+//     GET_METRICS: '/Invoice/GetMetrics',
+//     GET_TREND_12M: '/Invoice/GetTrend12m',
+//     GET_TOP_ITEMS: '/Invoice/GetTopItems',
+// GET_NEXT_INVOICE_NO: '/Invoice/GetNextInvoiceNo',
+//   },
+// };
