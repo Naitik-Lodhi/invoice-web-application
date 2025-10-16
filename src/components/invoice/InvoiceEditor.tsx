@@ -51,13 +51,29 @@ export interface InvoiceFormData {
   updatedOn?: string;
 }
 
+// ✅ API payload (string date for backend)
+export interface InvoicePayload {
+  invoiceNo: string;
+  invoiceDate: string;
+  customerName: string;
+  city: string;
+  address: string;
+  notes: string;
+  lineItems: LineItem[];
+  subTotal: number;
+  taxPercent: number;
+  taxAmount: number;
+  invoiceAmount: number;
+  updatedOnPrev: string | null;
+}
+
 export interface InvoiceEditorProps {
   open: boolean;
   mode: "new" | "edit";
   invoiceId?: string;
   onClose: () => void;
   onSave: (
-    data: InvoiceFormData
+    data: InvoicePayload
   ) => Promise<{ invoiceID: string; updatedOn: string }>;
   companyCurrency?: string;
   nextInvoiceNumber?: number;
@@ -215,7 +231,18 @@ const InvoiceEditor = ({
   useEffect(() => {
     if (open && mode === "new") {
       reset(getDefaultValues());
-      setLineItems([]);
+      setLineItems([
+        {
+          id: "",
+          itemId: "",
+          itemName: "",
+          description: "",
+          quantity: 0,
+          rate: 0,
+          discountPct: 0,
+          amount: 0,
+        },
+      ]);
       setValue("invoiceNo", String(nextInvoiceNumber));
       setHasChanges(false);
     }
@@ -311,8 +338,12 @@ const InvoiceEditor = ({
       const formattedDate = dayjs(data.invoiceDate).format("YYYY-MM-DD");
 
       const payload = {
-        ...data,
+        invoiceNo: data.invoiceNo,
         invoiceDate: formattedDate,
+        customerName: data.customerName,
+        city: data.city,
+        address: data.address,
+        notes: data.notes,
         lineItems,
         subTotal,
         taxPercent,
@@ -321,7 +352,7 @@ const InvoiceEditor = ({
         updatedOnPrev: currentUpdatedOn || null,
       };
 
-      const result = await onSave(payload);
+      await onSave(payload);
 
       reset(getDefaultValues());
       setLineItems([]);

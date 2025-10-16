@@ -43,17 +43,31 @@ getLookupList: async (): Promise<Array<{
   return response.data;
 },
 
-  create: async (data: ItemFormData): Promise<Item> => {
-    const payload = {
-      itemID: 0, // ✅ Add this for create
-      itemName: data.itemName.trim(),
-      description: data.description?.trim() || '',
-      salesRate: data.saleRate,
-      discountPct: data.discountPct || 0,
-    };
-    const response = await axiosInstance.post(API_ENDPOINTS.items.CREATE, payload);
-    return response.data;
-  },
+
+create: async (data: ItemFormData): Promise<Item> => {
+  const payload = {
+    itemID: 0,
+    itemName: data.itemName.trim(),
+    description: data.description?.trim() || '',
+    salesRate: data.saleRate,
+    discountPct: data.discountPct || 0,
+  };
+  
+  const response = await axiosInstance.post(
+    API_ENDPOINTS.items.CREATE, 
+    payload
+  );
+  
+  // ✅ FIXED: Backend returns primaryKeyID
+  return {
+    itemID: response.data.primaryKeyID, // ✅ Use this
+    itemName: payload.itemName,
+    description: payload.description,
+    salesRate: payload.salesRate,
+    discountPct: payload.discountPct,
+    updatedOn: response.data.updatedOn,
+  } as Item;
+},
 
   update: async (itemId: number, data: ItemFormData): Promise<Item> => {
     const payload = {

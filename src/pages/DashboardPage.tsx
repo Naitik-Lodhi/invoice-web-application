@@ -273,6 +273,10 @@ const handlePrintInvoice = async (id: string) => {
     // Get company info from context
     const companyInfo = {
       name: company?.companyName || "Your Company",
+      logo: company?.logoUrl || '',
+      address: company?.address || '',
+      city: company?.city || '',
+      zipCode: company?.zipCode || '',
     };
 
     // Print invoice with company details

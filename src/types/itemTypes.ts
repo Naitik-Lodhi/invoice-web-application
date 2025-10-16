@@ -20,6 +20,7 @@ export interface ItemFormData {
   saleRate: number;
   discountPct: number;
   updatedOnPrev?: string | null; 
+   imageRemoved?: boolean; 
 }
 
 export interface ItemEditorProps {

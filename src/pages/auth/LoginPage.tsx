@@ -31,27 +31,20 @@ const LoginPage = () => {
   });
 
   const onSubmit: SubmitHandler<LoginFormData> = async (data) => {
-    console.log('🔄 Login attempt with:', { email: data.email, rememberMe: data.rememberMe });
-    setApiError(''); // Clear previous errors
+  setApiError("");
+  
+  try {
+    const response = await authService.login({
+      email: data.email,
+      password: data.password,
+      rememberMe: data.rememberMe,
+    });
     
-    try {
-      const response = await authService.login({
-        email: data.email,
-        password: data.password,
-        rememberMe: data.rememberMe
-      });
-      
-      console.log('✅ Login successful:', response);
-      
-      setAuthData(
-        response.user, 
-        response.company, 
-        response.token,
-        data.rememberMe
-      );
-      
-      toast.success('Login successful!');
-      navigate('/');
+    // ✅ Make sure this has await
+    await setAuthData(response.user, response.company, response.token, data.rememberMe);
+    
+    toast.success("Login successful!");
+    navigate("/");
       
     } catch (err: any) {
       console.error('❌ Login error:', err);

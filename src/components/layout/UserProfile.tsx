@@ -15,7 +15,6 @@ import { useAuth } from "../../context/AuthContext";
 const UserProfile = () => {
   const { user, company, logout } = useAuth();
 
-  // ✅ Add safety check
   if (!user || !company) {
     return null;
   }
@@ -24,10 +23,10 @@ const UserProfile = () => {
     <List>
       <ListItem sx={{ gap: 2 }}>
         <Avatar 
-          src={company.companyName} // ✅ Changed from companyName
+          src={company.thumbnailUrl || company.logoUrl} // ✅ Use from context
           sx={{ bgcolor: "primary.main" }}
         >
-          {user.firstName?.charAt(0) || "U"}
+          {!company.thumbnailUrl && (user.firstName?.charAt(0) || "U")}
         </Avatar>
         <Box>
           <Typography variant="body1" sx={{ fontWeight: "bold" }}>

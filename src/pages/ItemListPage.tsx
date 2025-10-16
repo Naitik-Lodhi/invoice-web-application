@@ -165,98 +165,106 @@ const ItemListPage = () => {
   };
 
   // ✅ FIXED: Handle save item with proper error handling and state update
-  const handleSaveItem = async (data: ItemFormData) => {
-    try {
-      let itemID = editingItem?.itemID || 0;
+ // src/pages/ItemListPage.tsx
+// Replace handleSaveItem function
 
-      // Prepare item data
-      const itemData = {
-        itemName: data.itemName.trim(),
-        description: data.description?.trim() || "",
-        saleRate: data.saleRate,
-        discountPct: data.discountPct || 0,
-      };
+const handleSaveItem = async (data: ItemFormData) => {
+  try {
+    let itemID = editingItem?.itemID || 0;
+    let imageUploadSuccess = true;
 
-      let response: any;
+    const itemData = {
+      itemName: data.itemName.trim(),
+      description: data.description?.trim() || "",
+      saleRate: data.saleRate,
+      discountPct: data.discountPct || 0,
+    };
 
-      if (editorMode === "new") {
-        response = await itemService.create(itemData);
-        itemID = response.itemID;
-      } else {
-        // ✅ Send updatedOnPrev for concurrency check
-        response = await itemService.update(itemID, {
-          ...itemData,
-          updatedOnPrev: editingItem?.updatedOn || null,
-        });
+    let response: any;
+
+    if (editorMode === "new") {
+      console.log("📤 Creating new item...", itemData);
+      response = await itemService.create(itemData);
+      
+      // ✅ FIXED: Get itemID from transformed response
+      itemID = response.itemID;
+      
+      console.log("✅ Item created with ID:", itemID);
+      
+      if (!itemID || itemID === 0) {
+        console.error("❌ Could not extract itemID");
+        await fetchItems();
+        toast.warning("Item created but couldn't upload image. Please edit to add image.");
+        handleCloseEditor();
+        return;
       }
+      
+    } else {
+      console.log("📤 Updating item ID:", itemID);
+      response = await itemService.update(itemID, {
+        ...itemData,
+        updatedOnPrev: editingItem?.updatedOn || null,
+      });
+      console.log("✅ Item updated");
+    }
 
-      // Handle picture upload if provided
-      if (data.itemPicture instanceof File) {
-        try {
-          const formData = new FormData();
-          formData.append("ItemID", String(itemID));
-          formData.append("Picture", data.itemPicture);
+    // ✅ Upload image if provided
+   if (data.imageRemoved && editorMode === "edit") {
+      console.log("🗑️ Removing image for item ID:", itemID);
+      
+      
+      try {
+        const formData = new FormData();
+        formData.append("ItemID", String(itemID));
+        formData.append("Picture", new Blob(), "");
 
-          await axiosInstance.post("/Item/UpdateItemPicture", formData, {
+        const uploadResponse = await axiosInstance.post(
+          "/Item/UpdateItemPicture", 
+          formData,
+          {
             headers: {
               "Content-Type": "multipart/form-data",
             },
-          });
-        } catch (picError) {
-          console.error("Picture upload failed:", picError);
-          toast.warning("Item saved but picture upload failed");
-        }
+          }
+        );
+        
+        console.log("✅ Image upload response:", uploadResponse.status, uploadResponse.data);
+         console.log("✅ Image removed successfully");
+     } catch (picError: any) {
+        console.error("❌ Image upload failed:", picError);
+        imageUploadSuccess = false;
+        toast.error("Image upload failed. Item saved without image.");
       }
-
-      // ✅ CRITICAL: Refresh the items list to get updated timestamp
-      await fetchItems();
-
-      toast.success(
-        editorMode === "new"
-          ? "Item created successfully"
-          : "Item updated successfully"
-      );
-
-      // ✅ Close the dialog
-      handleCloseEditor();
-    } catch (error: any) {
-      console.error("❌ Save error:", error);
-
-      // ✅ Handle specific error cases
-      const errorMessage =
-        error.response?.data?.error || error.response?.data || error.message;
-
-      if (error.response?.status === 409) {
-        // Duplicate name
-        if (
-          typeof errorMessage === "string" &&
-          errorMessage.toLowerCase().includes("already exists")
-        ) {
-          throw new Error(
-            "Item name already exists. Please use a different name."
-          );
-        }
-        throw new Error(
-          "Item name already exists. Please use a different name."
-        );
-      } else if (error.response?.status === 412) {
-        // Concurrency conflict
-        throw new Error(
-          "This item was modified by another user. Please close and reopen to get the latest data."
-        );
-      } else if (
-        typeof errorMessage === "string" &&
-        errorMessage.toLowerCase().includes("modified by another user")
-      ) {
-        throw new Error(
-          "This item was modified by another user. Please close and reopen to get the latest data."
-        );
-      }
-
-      toast.error(errorMessage || "Failed to save item");
-      throw new Error(errorMessage || "Failed to save item");
     }
-  };
+
+    // Refresh items
+    await fetchItems();
+
+    // Success message
+    toast.success(
+      editorMode === "new"
+        ? "Item created successfully"
+        : "Item updated successfully"
+    );
+
+    handleCloseEditor();
+    
+  } catch (error: any) {
+    console.error("❌ Save error:", error);
+
+    const errorMessage =
+      error.response?.data?.error || error.response?.data || error.message;
+
+    if (error.response?.status === 409) {
+      throw new Error("Item name already exists. Please use a different name.");
+    } else if (error.response?.status === 412) {
+      throw new Error("Item was modified by another user. Please reload.");
+    }
+
+    toast.error(errorMessage || "Failed to save item");
+    throw new Error(errorMessage || "Failed to save item");
+  }
+};
 
   // Handle export
   const handleExport = () => {
@@ -307,7 +315,7 @@ const ItemListPage = () => {
           totalRecords={filteredItems.length}
           buttonName="New Item"
           searchBarPlaceholder="Search items..."
-           isExportDisabled={filteredItems.length === 0 || loading}
+          isExportDisabled={filteredItems.length === 0 || loading}
         />
       </Box>
 

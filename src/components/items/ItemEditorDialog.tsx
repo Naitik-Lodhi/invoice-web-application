@@ -36,12 +36,12 @@ const ItemEditorDialog = ({
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+   const [imageRemoved, setImageRemoved] = useState(false);
 
   const {
     control,
     handleSubmit,
     reset,
-    watch,
     formState: { isValid, isSubmitting },
   } = useForm<ItemFormData>({
     mode: "onChange",
@@ -54,15 +54,12 @@ const ItemEditorDialog = ({
     },
   });
 
-  // Watch fields for validation
-  const itemName = watch("itemName");
-  const saleRate = watch("saleRate");
-
   // Load data when dialog opens
   useEffect(() => {
     if (open && mode === "edit" && itemData) {
       setIsLoadingData(true);
       setDataLoaded(false);
+      setImageRemoved(false);
 
       const loadData = async () => {
         try {
@@ -94,6 +91,7 @@ const ItemEditorDialog = ({
     } else if (open && mode === "new") {
       setExistingImageUrl(null);
       setDataLoaded(true);
+       setImageRemoved(false); 
       reset({
         itemPicture: null,
         itemName: "",
@@ -111,6 +109,7 @@ const ItemEditorDialog = ({
       setIsLoadingData(false);
       setConcurrencyError(false);
       setSaveError(null);
+       setImageRemoved(false);
     }
   }, [open]);
 
@@ -118,23 +117,30 @@ const ItemEditorDialog = ({
   const isFormValid = dataLoaded && isValid && !isSubmitting;
 
   const onSubmit = async (data: ItemFormData) => {
-    console.log('📝 Form data before submit:', data);
-    
+    console.log("📝 Form data before submit:", data);
+    console.log("📝 Item picture:", data.itemPicture);
+    console.log("📝 Is File?", data.itemPicture instanceof File);
+
     setConcurrencyError(false);
     setSaveError(null);
-    
+
     try {
       await onSave({
         ...data,
         updatedOnPrev: itemData?.updatedOn || null,
+        imageRemoved,
       });
-      handleClose();
+      // ✅ handleClose will be called by parent after successful save
     } catch (error: any) {
-      console.error("Save error:", error);
+      console.error("❌ Save error in dialog:", error);
+
       if (error.message?.includes("modified by another user")) {
         setConcurrencyError(true);
       } else if (error.message?.includes("already exists")) {
         setSaveError(error.message);
+      } else if (error.message?.includes("Image upload failed")) {
+        // ✅ Don't show error in dialog, parent already showed toast
+        handleClose();
       } else {
         setSaveError(error.message || "Failed to save item");
       }
@@ -147,7 +153,13 @@ const ItemEditorDialog = ({
     setConcurrencyError(false);
     setSaveError(null);
     setDataLoaded(false);
+    setImageRemoved(false);
     onClose();
+  };
+
+   const handleImageRemove = () => {
+    setImageRemoved(true);
+    console.log("🗑️ Image marked for removal");
   };
 
   return (
@@ -199,6 +211,7 @@ const ItemEditorDialog = ({
               control={control}
               label="Picture"
               existingImageUrl={existingImageUrl}
+              onImageRemove={handleImageRemove}
             />
 
             {/* Item Name */}
@@ -211,9 +224,9 @@ const ItemEditorDialog = ({
               required
               maxLength={50}
               rules={{
-                required: 'Item name is required',
-                validate: (value: string) => 
-                  value?.trim().length > 0 || 'Item name cannot be empty',
+                required: "Item name is required",
+                validate: (value: string) =>
+                  value?.trim().length > 0 || "Item name cannot be empty",
               }}
             />
 
@@ -238,15 +251,15 @@ const ItemEditorDialog = ({
                   placeholder="0.00"
                   required
                   rules={{
-                    required: 'Sale rate is required',
+                    required: "Sale rate is required",
                     min: {
                       value: 0,
-                      message: 'Sale rate must be 0 or greater',
+                      message: "Sale rate must be 0 or greater",
                     },
                     validate: (value: any) => {
                       const num = Number(value);
-                      if (isNaN(num)) return 'Please enter a valid number';
-                      if (num < 0) return 'Sale rate must be 0 or greater';
+                      if (isNaN(num)) return "Please enter a valid number";
+                      if (num < 0) return "Sale rate must be 0 or greater";
                       return true;
                     },
                   }}
@@ -263,17 +276,17 @@ const ItemEditorDialog = ({
                   rules={{
                     min: {
                       value: 0,
-                      message: 'Discount must be 0 or greater',
+                      message: "Discount must be 0 or greater",
                     },
                     max: {
                       value: 100,
-                      message: 'Discount cannot exceed 100%',
+                      message: "Discount cannot exceed 100%",
                     },
                     validate: (value: any) => {
                       const num = Number(value);
-                      if (isNaN(num)) return 'Please enter a valid number';
-                      if (num < 0) return 'Discount must be 0 or greater';
-                      if (num > 100) return 'Discount cannot exceed 100%';
+                      if (isNaN(num)) return "Please enter a valid number";
+                      if (num < 0) return "Discount must be 0 or greater";
+                      if (num > 100) return "Discount cannot exceed 100%";
                       return true;
                     },
                   }}

@@ -1,4 +1,4 @@
-// src/components/common/FileUploadField.tsx
+// src/components/form/FileUploadField.tsx
 import { useState, useEffect } from "react";
 import { Box, Button, Typography, Avatar, IconButton } from "@mui/material";
 import {
@@ -15,11 +15,11 @@ interface FileUploadFieldProps<T extends FieldValues> {
   control: Control<T>;
   label: string;
   existingImageUrl?: string | null;
-  maxSize?: number; // in MB
+  maxSize?: number;
   accept?: string;
+  onImageRemove?: () => void; // ✅ New prop
 }
 
-// Type guard to check if value is a File
 const isFile = (value: any): value is File => {
   return value instanceof File;
 };
@@ -31,17 +31,19 @@ const FileUploadField = <T extends FieldValues>({
   existingImageUrl,
   maxSize = 5,
   accept = "image/png, image/jpeg",
+  onImageRemove, // ✅ New prop
 }: FileUploadFieldProps<T>) => {
   const [preview, setPreview] = useState<string | null>(null);
+  const [isExistingImageRemoved, setIsExistingImageRemoved] = useState(false); // ✅ Track removal
 
-  // Set existing image URL as preview when component mounts or existingImageUrl changes
+  // Set existing image URL as preview
   useEffect(() => {
-    if (existingImageUrl) {
+    if (existingImageUrl && !isExistingImageRemoved) {
       setPreview(existingImageUrl);
     }
-  }, [existingImageUrl]);
+  }, [existingImageUrl, isExistingImageRemoved]);
 
-  // Cleanup object URLs to prevent memory leaks
+  // Cleanup object URLs
   useEffect(() => {
     return () => {
       if (preview && preview.startsWith("blob:")) {
@@ -61,7 +63,7 @@ const FileUploadField = <T extends FieldValues>({
         return;
       }
 
-      // Clean up previous object URL if exists
+      // Clean up previous object URL
       if (preview && preview.startsWith("blob:")) {
         URL.revokeObjectURL(preview);
       }
@@ -69,23 +71,37 @@ const FileUploadField = <T extends FieldValues>({
       // Create new preview
       const newPreview = URL.createObjectURL(file);
       setPreview(newPreview);
+      setIsExistingImageRemoved(false); // ✅ Reset removal flag
       onChange(file);
     } else {
-      // Clear preview when no file
       if (preview && preview.startsWith("blob:")) {
         URL.revokeObjectURL(preview);
       }
-      setPreview(existingImageUrl || null);
+      setPreview(existingImageUrl && !isExistingImageRemoved ? existingImageUrl : null);
       onChange(null);
     }
   };
 
+  // ✅ NEW: Handle permanent removal
   const handleRemove = (onChange: (value: any) => void) => {
+    // Clean up blob URL if exists
     if (preview && preview.startsWith("blob:")) {
       URL.revokeObjectURL(preview);
     }
-    setPreview(existingImageUrl || null);
-    onChange(null);
+    
+    // Clear preview
+    setPreview(null);
+    
+    // Mark existing image as removed
+    setIsExistingImageRemoved(true);
+    
+    // Set form value to special marker for deletion
+    onChange("DELETE_IMAGE"); // ✅ Special marker
+    
+    // Call parent callback if provided
+    if (onImageRemove) {
+      onImageRemove();
+    }
 
     // Reset file input
     const fileInput = document.getElementById(name) as HTMLInputElement;
@@ -130,16 +146,16 @@ const FileUploadField = <T extends FieldValues>({
             }}
           >
             {/* Preview Section */}
-            {preview ? (
+            {preview && value !== "DELETE_IMAGE" ? (
               <Box sx={{ position: "relative", display: "inline-block" }}>
                 <Avatar
                   src={preview}
                   variant="rounded"
                   sx={{
-                    width: 50,
-                    height: 50,
+                    width: 120,
+                    height: 120,
                     mb: 2,
-                    boxShadow: 1,
+                    boxShadow: 2,
                   }}
                 />
                 {/* Remove button */}
@@ -150,10 +166,11 @@ const FileUploadField = <T extends FieldValues>({
                     position: "absolute",
                     top: -8,
                     right: -8,
-                    bgcolor: "white",
+                    bgcolor: "#ef4444",
+                    color: "white",
                     boxShadow: 2,
                     "&:hover": {
-                      bgcolor: "#f5f5f5",
+                      bgcolor: "#dc2626",
                     },
                   }}
                 >
@@ -189,7 +206,7 @@ const FileUploadField = <T extends FieldValues>({
                   },
                 }}
               >
-                {preview ? "Change Image" : "Choose Image"}
+                {preview && value !== "DELETE_IMAGE" ? "Change Image" : "Choose Image"}
                 <input
                   type="file"
                   hidden
@@ -203,7 +220,7 @@ const FileUploadField = <T extends FieldValues>({
                 />
               </Button>
 
-              {/* File info - FIXED HERE */}
+              {/* File info */}
               <Typography
                 variant="caption"
                 color="text.secondary"
@@ -211,6 +228,8 @@ const FileUploadField = <T extends FieldValues>({
               >
                 {isFile(value)
                   ? `Selected: ${value.name}`
+                  : value === "DELETE_IMAGE"
+                  ? "Image will be removed"
                   : preview && !preview.startsWith("blob:")
                   ? "Current image"
                   : `Max file size: ${maxSize}MB`}

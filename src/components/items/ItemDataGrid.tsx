@@ -26,7 +26,6 @@ const ItemDataGrid = ({
   onEdit,
   onDelete,
   loading = false,
-  searchText = "",
   companyCurrency = "$",
 }: ItemDataGridProps) => {
   const theme = useTheme();
