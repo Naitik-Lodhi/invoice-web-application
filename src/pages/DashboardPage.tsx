@@ -176,7 +176,7 @@ const DashboardPage = () => {
       setColumnVisibility(newVisibility);
     }
   }, [isMobile]);
-  
+
   const handleColumnVisibilityChange = (field: string, visible: boolean) => {
     setColumnVisibility((prev) =>
       prev.map((col) => (col.field === field ? { ...col, visible } : col))
@@ -219,7 +219,8 @@ const DashboardPage = () => {
       );
 
       // Refresh data
-      await fetchData();
+      await fetchFilteredData();
+      await fetchTrendData();
       handleCloseEditor();
 
       return {
@@ -261,31 +262,31 @@ const DashboardPage = () => {
   };
 
   // ✅ Update handlePrintInvoice function (find and replace)
-const handlePrintInvoice = async (id: string) => {
-  try {
-    toast.info("Preparing invoice for print...");
+  const handlePrintInvoice = async (id: string) => {
+    try {
+      toast.info("Preparing invoice for print...");
 
-    // Fetch full invoice details with item names
-    const invoiceForPrint = await invoiceService.getInvoiceForPrint(
-      parseInt(id)
-    );
+      // Fetch full invoice details with item names
+      const invoiceForPrint = await invoiceService.getInvoiceForPrint(
+        parseInt(id)
+      );
 
-    // Get company info from context
-    const companyInfo = {
-      name: company?.companyName || "Your Company",
-      logo: company?.logoUrl || '',
-      address: company?.address || '',
-      city: company?.city || '',
-      zipCode: company?.zipCode || '',
-    };
+      // Get company info from context
+      const companyInfo = {
+        name: company?.companyName || "Your Company",
+        logo: company?.logoUrl || "",
+        address: company?.address || "",
+        city: company?.city || "",
+        zipCode: company?.zipCode || "",
+      };
 
-    // Print invoice with company details
-    printInvoice(invoiceForPrint, companyCurrency, companyInfo);
-  } catch (error: any) {
-    console.error("Print error:", error);
-    toast.error("Failed to prepare invoice for printing");
-  }
-};
+      // Print invoice with company details
+      printInvoice(invoiceForPrint, companyCurrency, companyInfo);
+    } catch (error: any) {
+      console.error("Print error:", error);
+      toast.error("Failed to prepare invoice for printing");
+    }
+  };
 
   const handleDeleteInvoice = (id: string) => {
     setInvoiceToDelete(id);
@@ -298,7 +299,7 @@ const handlePrintInvoice = async (id: string) => {
     try {
       await invoiceService.delete(parseInt(invoiceToDelete));
       toast.success("Invoice deleted successfully");
-      await fetchData();
+      await fetchFilteredData();
     } catch (error: any) {
       toast.error(error.message || "Failed to delete invoice");
     } finally {
@@ -307,156 +308,166 @@ const handlePrintInvoice = async (id: string) => {
     }
   };
 
-  // fetch data with temporary fix to show item count it was backend problem
-  const fetchData = useCallback(
-  async (overrideFilter?: string) => {
-    const currentFilter = overrideFilter || activeFilter;
-    const { from, to } = getDateRange(currentFilter, customDateRange);
+  const fetchFilteredData = useCallback(
+    async (overrideFilter?: string) => {
+      const currentFilter = overrideFilter || activeFilter;
+      const { from, to } = getDateRange(currentFilter, customDateRange);
 
-    console.log("🔄 Fetching dashboard data...", {
-      filter: currentFilter,
-      from,
-      to,
-    });
+      console.log("🔄 Fetching filtered data...", {
+        filter: currentFilter,
+        from,
+        to,
+      });
 
-    setError(null);
-    setIsLoadingMetrics(true);
-    setIsLoadingList(true);
-    setIsLoadingTopItems(true);
-    setIsLoadingTrend(true);
+      setError(null);
+      setIsLoadingMetrics(true);
+      setIsLoadingList(true);
+      setIsLoadingTopItems(true);
 
-    try {
-      // ✅ CHANGED: Use helper function instead of getList
-      const [metricsData, listDataWithCounts, topItemsData, trendData] =
-        await Promise.all([
+      try {
+        // ✅ ONLY fetch filter-dependent APIs
+        const [metricsData, listDataWithCounts, topItemsData] = await Promise.all([
           invoiceService.getMetrics(from, to),
-          invoiceService.getListWithItemCounts(from, to), // 👈 Changed this line
+          invoiceService.getListWithItemCounts(from, to),
           invoiceService.getTopItems(5, from, to),
-          invoiceService.getTrend12m(),
         ]);
 
-      console.log("📊 All Data Received:", {
-        metrics: metricsData,
-        list: listDataWithCounts?.length,
-        topItems: topItemsData?.length,
-        trend: trendData?.length,
-      });
+        console.log("📊 Filtered Data Received:", {
+          metrics: metricsData,
+          list: listDataWithCounts?.length,
+          topItems: topItemsData?.length,
+        });
 
-      // Process metrics
-      const metricsObject = Array.isArray(metricsData)
-        ? metricsData[0]
-        : metricsData;
-      setMetrics({
-        invoiceCount: metricsObject?.invoiceCount || 0,
-        totalAmount: metricsObject?.totalAmount || 0,
-      });
-      setIsLoadingMetrics(false);
+        // Process metrics (Card 1 & 2)
+        const metricsObject = Array.isArray(metricsData)
+          ? metricsData[0]
+          : metricsData;
+        setMetrics({
+          invoiceCount: metricsObject?.invoiceCount || 0,
+          totalAmount: metricsObject?.totalAmount || 0,
+        });
+        setIsLoadingMetrics(false);
 
-      // ✅ CHANGED: Process invoice list with item counts
-      const invoicesWithId = (
-        Array.isArray(listDataWithCounts) ? listDataWithCounts : []
-      ).map((invoice) => ({
-        ...invoice,
-        id: String(invoice.invoiceID),
-        invoiceNumber: `INV-${invoice.invoiceNo}`,
-        date: invoice.invoiceDate,
-        customer: invoice.customerName,
-        // ✅ Create items array from lineItemCount
-        items: Array.from({ length: invoice.lineItemCount || 0 }, (_, i) => ({
-          quantity: 1,
-          name: `Item ${i + 1}`,
-          price: 0,
-        })),
-        subTotal: invoice.subTotal,
-        taxPercent: invoice.taxPercentage,
-        taxAmount: invoice.taxAmount,
-        total: invoice.invoiceAmount,
-        address: invoice.address,
-        city: invoice.city,
-      }));
+        // Process invoice list (Grid)
+        const invoicesWithId = (
+          Array.isArray(listDataWithCounts) ? listDataWithCounts : []
+        ).map((invoice) => ({
+          ...invoice,
+          id: String(invoice.invoiceID),
+          invoiceNumber: `INV-${invoice.invoiceNo}`,
+          date: invoice.invoiceDate,
+          customer: invoice.customerName,
+          items: Array.from({ length: invoice.lineItemCount || 0 }, (_, i) => ({
+            quantity: 1,
+            name: `Item ${i + 1}`,
+            price: 0,
+          })),
+          subTotal: invoice.subTotal,
+          taxPercent: invoice.taxPercentage,
+          taxAmount: invoice.taxAmount,
+          total: invoice.invoiceAmount,
+          address: invoice.address,
+          city: invoice.city,
+        }));
 
-      setInvoiceList({ invoices: invoicesWithId });
-      setIsLoadingList(false);
+        setInvoiceList({ invoices: invoicesWithId });
+        setIsLoadingList(false);
 
-      // Process top items (no changes)
-      if (topItemsData && Array.isArray(topItemsData)) {
-        const formattedItems = topItemsData
-          .filter((item) => item.itemName !== "Others")
-          .map((item) => ({
-            name: item.itemName || "Unknown",
-            value: item.amountSum,
-            quantity: 0,
-          }));
-        setTopItems({ items: formattedItems });
-      } else {
-        setTopItems({ items: [] });
+        // Process top items (Card 4)
+        if (topItemsData && Array.isArray(topItemsData)) {
+          const formattedItems = topItemsData
+            .filter((item) => item.itemName !== "Others")
+            .map((item) => ({
+              name: item.itemName || "Unknown",
+              value: item.amountSum,
+              quantity: 0,
+            }));
+          setTopItems({ items: formattedItems });
+        } else {
+          setTopItems({ items: [] });
+        }
+        setIsLoadingTopItems(false);
+
+      } catch (err: any) {
+        console.error("❌ Error fetching filtered data:", err);
+        setError(err);
+        setIsLoadingMetrics(false);
+        setIsLoadingList(false);
+        setIsLoadingTopItems(false);
       }
-      setIsLoadingTopItems(false);
+    },
+    [activeFilter, customDateRange]
+  );
 
-      // Process trend data (no changes)
+   const fetchTrendData = useCallback(async () => {
+    setIsLoadingTrend(true);
+    try {
+      const trendData = await invoiceService.getTrend12m();
+      
+      console.log("📈 Trend Data Received:", trendData?.length);
+
       if (trendData && Array.isArray(trendData) && trendData.length > 0) {
-        console.log("✅ Processing trend data, count:", trendData.length);
+        const formattedMonths = trendData
+          .map((item, index) => {
+            if (!item || !item.month) {
+              console.warn(`⚠️ Invalid trend item at index ${index}:`, item);
+              return null;
+            }
 
-        const formattedTrend = {
-          months: trendData
-            .filter((item) => item && item.month)
-            .map((item) => {
-              let monthStr = "";
-              try {
-                if (item.month) {
-                  const date = new Date(item.month);
-                  if (!isNaN(date.getTime())) {
-                    monthStr = date.toLocaleDateString("en-US", {
-                      month: "short",
-                      year: "2-digit",
-                    });
-                  }
-                }
-              } catch (e) {
-                console.error("❌ Error formatting month:", item.month, e);
+            let monthStr = "";
+            try {
+              const date = new Date(item.month);
+
+              if (isNaN(date.getTime())) {
+                console.error(`❌ Invalid date at index ${index}:`, item.month);
+                return null;
               }
 
-              return {
-                month: monthStr || "N/A",
-                amount: typeof item.amount === "number" ? item.amount : 0,
-                count: typeof item.count === "number" ? item.count : 0,
-              };
-            })
-            .filter((item) => item.month !== "N/A"),
-        };
+              monthStr = date.toLocaleDateString("en-US", {
+                month: "short",
+                year: "2-digit",
+              });
 
-        console.log("📊 Formatted Trend:", formattedTrend);
-        setTrend12m(formattedTrend);
+              console.log(`✅ Formatted month ${index}: ${item.month} → ${monthStr}`);
+            } catch (error) {
+              console.error(`❌ Error parsing date at index ${index}:`, error);
+              return null;
+            }
+
+            return {
+              month: monthStr,
+              amount: Number(item.amount) || 0,
+              count: Number(item.count) || 0,
+            };
+          })
+          .filter((item) => item !== null);
+
+        console.log("📊 Final Formatted Trend:", formattedMonths);
+        setTrend12m({ months: formattedMonths });
       } else {
-        console.log("⚠️ No trend data received");
+        console.warn("⚠️ No trend data or empty array");
         setTrend12m({ months: [] });
       }
-      setIsLoadingTrend(false);
     } catch (err: any) {
-      console.error("❌ Error fetching data:", err);
-      setError(err);
-      setIsLoadingMetrics(false);
-      setIsLoadingList(false);
-      setIsLoadingTopItems(false);
+      console.error("❌ Error fetching trend data:", err);
+      setTrend12m({ months: [] });
+    } finally {
       setIsLoadingTrend(false);
     }
-  },
-  [activeFilter, customDateRange]
-);
+  }, []); // ✅ No dependencies - called only once
 
+ useEffect(() => {
+    console.log("🎬 Initial load - fetching trend data");
+    fetchTrendData();
+  }, []); // ✅ Empty dependency - runs only once
 
-  // ✅ FIXED: Only fetch when filter changes
+  // ✅ FILTER CHANGE: Fetch filtered data
   useEffect(() => {
     if (activeFilter) {
-      fetchData();
+      console.log("🔄 Filter changed - fetching filtered data");
+      fetchFilteredData();
     }
-  }, [activeFilter, customDateRange]); // ✅ Remove fetchData from dependencies
-
-  useEffect(() => {
-    if (activeFilter) {
-      fetchData();
-    }
-  }, [activeFilter, customDateRange, fetchData]);
+  }, [activeFilter, customDateRange, fetchFilteredData]);
 
   // Filter invoices
   const filteredInvoices =
@@ -489,7 +500,7 @@ const handlePrintInvoice = async (id: string) => {
   if (error && !isInitialLoading) {
     return (
       <Box sx={{ p: 3 }}>
-        <ErrorDisplay message={error.message} onRetry={fetchData} />
+        <ErrorDisplay message={error.message} onRetry={fetchFilteredData} />
       </Box>
     );
   }
@@ -535,11 +546,11 @@ const handlePrintInvoice = async (id: string) => {
             totalRecords={filteredInvoices.length}
             buttonName="New Invoice"
             searchBarPlaceholder="Search invoices..."
-            isExportDisabled={filteredInvoices.length === 0 || isLoadingList} 
+            isExportDisabled={filteredInvoices.length === 0 || isLoadingList}
           />
         </Box>
 
-        <Box sx={{  width: "100%" }}>
+        <Box sx={{ width: "100%" }}>
           <InvoiceDataGrid
             invoices={filteredInvoices}
             visibleColumns={columnVisibility

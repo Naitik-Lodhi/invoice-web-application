@@ -162,8 +162,6 @@ export const invoiceService = {
 
       console.log(`📊 Fetching item counts for ${invoices.length} invoices...`);
 
-      // Fetch details for first 20 invoices only to avoid too many API calls
-      // For remaining, we'll show approximate count
       const DETAIL_FETCH_LIMIT = 20;
       const invoicesToFetch = invoices.slice(0, DETAIL_FETCH_LIMIT);
       const remainingInvoices = invoices.slice(DETAIL_FETCH_LIMIT);
@@ -349,6 +347,7 @@ export const invoiceService = {
 
   // Existing: Get 12 month trend
   getTrend12m: async (asOf?: string): Promise<TrendData[]> => {
+    try {
     const params = asOf ? { asOf } : undefined;
     const response = await axiosInstance.get(
       API_ENDPOINTS.invoices.GET_TREND_12M,
@@ -357,15 +356,27 @@ export const invoiceService = {
 
     console.log("🔍 Trend API Response:", response.data);
 
-    const transformedData = (response.data || []).map((item: any) => ({
-      month: item.monthStart || item.month,
-      amount: item.amountSum ?? item.amount ?? 0,
-      count: item.invoiceCount ?? item.count ?? 0,
-    }));
+     const transformedData = (response.data || [])
+      .map((item: any) => {
+        // Validate required fields
+        if (!item.monthStart) {
+          console.warn("⚠️ Missing monthStart in item:", item);
+          return null;
+        }
 
-    console.log("🔄 Transformed Trend Data:", transformedData);
+        return {
+          month: item.monthStart,
+          amount: Number(item.amountSum) || 0,
+          count: Number(item.invoiceCount) || 0,
+        };
+      })
+      .filter((item: any) => item !== null);
 
     return transformedData;
+    } catch (error) {
+    console.error("❌ Error fetching trend data:", error);
+    return [];
+  }
   },
 
   // Existing: Get top items

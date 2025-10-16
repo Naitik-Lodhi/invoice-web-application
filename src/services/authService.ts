@@ -118,30 +118,34 @@ export const authService = {
       );
       
       let logoUrl = response.data;
+      console.log("📥 Original logo URL:", logoUrl);
       
       if (typeof logoUrl === 'string') {
-        console.log("📥 Original logo URL:", logoUrl);
+        // ✅ Step 1: Replace ALL backslashes (encoded and unencoded)
+        logoUrl = logoUrl.replace(/\\/g, '/').replace(/%5C/gi, '/');
         
-        // ✅ Replace backslashes with forward slashes
-        logoUrl = logoUrl.replace(/\\/g, '/');
-        
-        // ✅ Only encode spaces in the path portion (not the whole URL)
+        // ✅ Step 2: Encode spaces properly
         if (logoUrl.includes('blob.core.windows.net')) {
-          const urlObj = new URL(logoUrl);
-          
-          // Encode only the pathname (spaces → %20)
-          urlObj.pathname = urlObj.pathname
-            .split('/')
-            .map(segment => {
-              // If segment has spaces, encode it
-              if (segment.includes(' ')) {
-                return encodeURIComponent(segment);
-              }
-              return segment;
-            })
-            .join('/');
-          
-          logoUrl = urlObj.toString();
+          try {
+            const urlObj = new URL(logoUrl);
+            
+            // Encode pathname segments individually
+            const pathSegments = urlObj.pathname.split('/');
+            urlObj.pathname = pathSegments
+              .map(segment => {
+                // Skip empty segments and already encoded ones
+                if (!segment || segment.includes('%20')) return segment;
+                // Encode spaces and special chars
+                return segment.includes(' ') 
+                  ? encodeURIComponent(segment) 
+                  : segment;
+              })
+              .join('/');
+            
+            logoUrl = urlObj.toString();
+          } catch (urlError) {
+            console.error("URL parsing failed:", urlError);
+          }
         }
         
         console.log("🔧 Processed logo URL:", logoUrl);
@@ -150,7 +154,7 @@ export const authService = {
       return logoUrl;
     } catch (error) {
       console.error("❌ Failed to get company logo:", error);
-      throw error;
+      return ''; // ✅ Return empty string instead of throwing
     }
   },
 
@@ -161,28 +165,31 @@ export const authService = {
       );
       
       let thumbnailUrl = response.data;
+      console.log("📥 Original thumbnail URL:", thumbnailUrl);
       
       if (typeof thumbnailUrl === 'string') {
-        console.log("📥 Original thumbnail URL:", thumbnailUrl);
+        // ✅ Step 1: Replace ALL backslashes
+        thumbnailUrl = thumbnailUrl.replace(/\\/g, '/').replace(/%5C/gi, '/');
         
-        // ✅ Replace backslashes with forward slashes
-        thumbnailUrl = thumbnailUrl.replace(/\\/g, '/');
-        
-        // ✅ Only encode spaces in the path portion
+        // ✅ Step 2: Encode spaces properly
         if (thumbnailUrl.includes('blob.core.windows.net')) {
-          const urlObj = new URL(thumbnailUrl);
-          
-          urlObj.pathname = urlObj.pathname
-            .split('/')
-            .map(segment => {
-              if (segment.includes(' ')) {
-                return encodeURIComponent(segment);
-              }
-              return segment;
-            })
-            .join('/');
-          
-          thumbnailUrl = urlObj.toString();
+          try {
+            const urlObj = new URL(thumbnailUrl);
+            
+            const pathSegments = urlObj.pathname.split('/');
+            urlObj.pathname = pathSegments
+              .map(segment => {
+                if (!segment || segment.includes('%20')) return segment;
+                return segment.includes(' ') 
+                  ? encodeURIComponent(segment) 
+                  : segment;
+              })
+              .join('/');
+            
+            thumbnailUrl = urlObj.toString();
+          } catch (urlError) {
+            console.error("URL parsing failed:", urlError);
+          }
         }
         
         console.log("🔧 Processed thumbnail URL:", thumbnailUrl);
@@ -191,7 +198,7 @@ export const authService = {
       return thumbnailUrl;
     } catch (error) {
       console.error("❌ Failed to get company logo thumbnail:", error);
-      throw error;
+      return ''; // ✅ Return empty string
     }
   },
 

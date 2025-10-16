@@ -1,4 +1,6 @@
 // src/components/layout/UserProfile.tsx
+
+import { useState } from 'react';
 import {
   Box,
   List,
@@ -14,19 +16,30 @@ import { useAuth } from "../../context/AuthContext";
 
 const UserProfile = () => {
   const { user, company, logout } = useAuth();
+  const [logoError, setLogoError] = useState(false);
 
   if (!user || !company) {
     return null;
   }
 
+  // ✅ Determine logo source
+  const logoSrc = company.thumbnailUrl || company.logoUrl;
+  const showInitials = !logoSrc || logoError;
+
   return (
     <List>
       <ListItem sx={{ gap: 2 }}>
         <Avatar 
-          src={company.thumbnailUrl || company.logoUrl} // ✅ Use from context
+          src={showInitials ? undefined : logoSrc}
           sx={{ bgcolor: "primary.main" }}
+          imgProps={{
+            onError: () => {
+              console.error("❌ Logo failed to load");
+              setLogoError(true);
+            }
+          }}
         >
-          {!company.thumbnailUrl && (user.firstName?.charAt(0) || "U")}
+          {showInitials && (user.firstName?.charAt(0) || "U")}
         </Avatar>
         <Box>
           <Typography variant="body1" sx={{ fontWeight: "bold" }}>
