@@ -1,4 +1,6 @@
 // src/utils/printInvoice.ts
+// Replace ENTIRE file
+
 import { format } from "date-fns";
 
 interface InvoiceItem {
@@ -27,6 +29,7 @@ interface Invoice {
 interface CompanyInfo {
   name: string;
   logo?: string;
+  companyID?: number; // ✅ NEW: For localStorage key
   address?: string;
   city?: string;
   zipCode?: string;
@@ -35,19 +38,41 @@ interface CompanyInfo {
   website?: string;
 }
 
-export const printInvoice = (
+export const printInvoice = async (
   invoice: Invoice,
   companyCurrency: string = "$",
   companyInfo?: CompanyInfo
 ) => {
+  console.log("🖨️ printInvoice called");
+  console.log("   Invoice:", invoice.invoiceNumber);
+  console.log("   Company:", companyInfo?.name);
+
   const invoiceDate = format(new Date(invoice.date), "dd-MMM-yyyy");
   const printDate = format(new Date(), "dd-MMM-yyyy hh:mm a");
+
+  // ✅ Try to get logo from localStorage first
+  let logoBase64 = '';
+  let useFallback = true;
+
+  if (companyInfo?.companyID) {
+    const storedLogo = localStorage.getItem(`company_logo_base64_${companyInfo.companyID}`);
+    if (storedLogo) {
+      logoBase64 = storedLogo;
+      useFallback = false;
+      console.log("✅ Using logo from localStorage");
+    } else {
+      console.log("⚠️ No logo in localStorage, using fallback");
+    }
+  }
+
+  console.log("   Using fallback:", useFallback);
 
   const printHTML = `
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Invoice - ${invoice.customer} - ${invoice.invoiceNumber}</title>
+      <meta charset="UTF-8">
+      <title>Invoice ${invoice.invoiceNumber}</title>
       <style>
         * {
           margin: 0;
@@ -56,7 +81,7 @@ export const printInvoice = (
         }
 
         body {
-          font-family: 'Inter', sans-serif;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
           padding: 20px;
           background: #fff;
           color: #222;
@@ -70,7 +95,6 @@ export const printInvoice = (
           border-radius: 6px;
         }
 
-        /* Header */
         .invoice-header {
           display: flex;
           justify-content: space-between;
@@ -79,10 +103,33 @@ export const printInvoice = (
           border-bottom: 2px solid #eee;
         }
 
+        .logo-container {
+          width: 100px;
+          height: 100px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
         .company-logo {
           max-width: 100px;
           max-height: 100px;
           object-fit: contain;
+          border-radius: 8px;
+        }
+
+        .company-logo-fallback {
+          width: 80px;
+          height: 80px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 36px;
+          font-weight: 700;
+          color: white;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .company-info {
@@ -99,12 +146,11 @@ export const printInvoice = (
         }
 
         .company-details div {
-          line-height: 1.4;
+          line-height: 1.6;
         }
 
-        /* Title Bar */
         .invoice-title-bar {
-          background: #f9f9f9;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           padding: 12px 30px;
           border-bottom: 1px solid #eee;
         }
@@ -112,10 +158,9 @@ export const printInvoice = (
         .invoice-title {
           font-size: 18px;
           font-weight: 600;
-          color: #333;
+          color: white;
         }
 
-        /* Body */
         .invoice-body {
           padding: 30px;
         }
@@ -131,6 +176,7 @@ export const printInvoice = (
           text-transform: uppercase;
           color: #666;
           margin-bottom: 8px;
+          font-weight: 600;
         }
 
         .meta-section p {
@@ -146,7 +192,6 @@ export const printInvoice = (
           margin-bottom: 6px;
         }
 
-        /* Table */
         table {
           width: 100%;
           border-collapse: collapse;
@@ -170,7 +215,6 @@ export const printInvoice = (
         .text-right { text-align: right; }
         .text-center { text-align: center; }
 
-        /* Totals */
         .totals {
           width: 300px;
           margin-left: auto;
@@ -188,12 +232,16 @@ export const printInvoice = (
         .totals-row.total {
           font-weight: 700;
           font-size: 16px;
+          margin-top: 4px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 8px 12px;
+          border-radius: 4px;
         }
 
-        /* Notes */
         .notes-section {
-          background: #fdfdfd;
-          border-left: 3px solid #ccc;
+          background: #f9f9f9;
+          border-left: 3px solid #667eea;
           padding: 12px 16px;
           margin-top: 20px;
         }
@@ -208,9 +256,9 @@ export const printInvoice = (
         .notes-section p {
           font-size: 13px;
           color: #555;
+          line-height: 1.5;
         }
 
-        /* Footer */
         .footer {
           background: #f9f9f9;
           color: #666;
@@ -224,6 +272,7 @@ export const printInvoice = (
           font-weight: 600;
           font-size: 13px;
           margin-bottom: 4px;
+          color: #667eea;
         }
 
         @media print {
@@ -234,6 +283,7 @@ export const printInvoice = (
           .invoice-container {
             box-shadow: none;
             border-radius: 0;
+            border: none;
           }
         }
       </style>
@@ -241,24 +291,38 @@ export const printInvoice = (
     <body>
       <div class="invoice-container">
         <div class="invoice-header">
-          <div>
+          <div class="logo-container">
             ${
-              companyInfo?.logo
-                ? `<img src="${companyInfo.logo}" alt="${companyInfo.name}" class="company-logo" onerror="this.style.display='none'" />`
-                : ""
+              !useFallback && logoBase64
+                ? `<img src="${logoBase64}" alt="${companyInfo?.name}" class="company-logo" />`
+                : `<div class="company-logo-fallback">${
+                    companyInfo?.name?.charAt(0)?.toUpperCase() || "C"
+                  }</div>`
             }
           </div>
           <div class="company-info">
-            <div class="company-name">${companyInfo?.name || "Your Company"}</div>
+            <div class="company-name">${
+              companyInfo?.name || "Your Company"
+            }</div>
             <div class="company-details">
               ${companyInfo?.address ? `<div>${companyInfo.address}</div>` : ""}
               ${
                 companyInfo?.city || companyInfo?.zipCode
-                  ? `<div>${companyInfo.city || ""}${companyInfo.city && companyInfo.zipCode ? ", " : ""}${companyInfo.zipCode || ""}</div>`
+                  ? `<div>${companyInfo.city || ""}${
+                      companyInfo.city && companyInfo.zipCode ? ", " : ""
+                    }${companyInfo.zipCode || ""}</div>`
                   : ""
               }
-              ${companyInfo?.phone ? `<div>Phone: ${companyInfo.phone}</div>` : ""}
-              ${companyInfo?.email ? `<div>Email: ${companyInfo.email}</div>` : ""}
+              ${
+                companyInfo?.phone
+                  ? `<div>Phone: ${companyInfo.phone}</div>`
+                  : ""
+              }
+              ${
+                companyInfo?.email
+                  ? `<div>Email: ${companyInfo.email}</div>`
+                  : ""
+              }
               ${companyInfo?.website ? `<div>${companyInfo.website}</div>` : ""}
             </div>
           </div>
@@ -289,7 +353,7 @@ export const printInvoice = (
             <thead>
               <tr>
                 <th class="text-center" style="width:40px;">#</th>
-                <th>Item Description</th>
+                <th>Item Name</th>
                 <th class="text-center" style="width:80px;">Qty</th>
                 <th class="text-right" style="width:100px;">Rate</th>
                 <th class="text-center" style="width:90px;">Discount</th>
@@ -304,9 +368,13 @@ export const printInvoice = (
                       <td class="text-center">${index + 1}</td>
                       <td>${item.name}</td>
                       <td class="text-center">${item.quantity}</td>
-                      <td class="text-right">${companyCurrency}${item.rate.toFixed(2)}</td>
+                      <td class="text-right">${companyCurrency}${item.rate.toFixed(
+                    2
+                  )}</td>
                       <td class="text-center">${item.discountPct}%</td>
-                      <td class="text-right">${companyCurrency}${(item.quantity * item.price).toFixed(2)}</td>
+                      <td class="text-right">${companyCurrency}${(
+                    item.quantity * item.price
+                  ).toFixed(2)}</td>
                     </tr>
                   `
                 )
@@ -324,7 +392,7 @@ export const printInvoice = (
               <span>${companyCurrency}${invoice.taxAmount.toFixed(2)}</span>
             </div>
             <div class="totals-row total">
-              <span>Total</span>
+              <span>TOTAL</span>
               <span>${companyCurrency}${invoice.total.toFixed(2)}</span>
             </div>
           </div>
@@ -347,10 +415,15 @@ export const printInvoice = (
       </div>
 
       <script>
-        document.title = '${invoice.invoiceNumber}_${invoice.customer.replace(/[^a-zA-Z0-9]/g, "_")}';
+        console.log("📄 Print window loaded");
         window.onload = function() {
-          setTimeout(() => window.print(), 250);
+          console.log("🖨️ Opening print dialog...");
+          setTimeout(() => {
+            window.print();
+          }, 500);
+          
           window.onafterprint = function() {
+            console.log("✅ Print dialog closed");
             window.close();
           };
         };
@@ -359,11 +432,20 @@ export const printInvoice = (
     </html>
   `;
 
-  const printWindow = window.open("", "_blank", "width=900,height=800");
+  console.log("📄 Opening print window...");
+
+  const printWindow = window.open(
+    "",
+    "PRINT",
+    "width=900,height=800"
+  );
+
   if (printWindow) {
     printWindow.document.write(printHTML);
     printWindow.document.close();
+    console.log("✅ Print window opened successfully");
   } else {
+    console.error("❌ Failed to open print window");
     alert("Please allow pop-ups to print the invoice.");
   }
 };

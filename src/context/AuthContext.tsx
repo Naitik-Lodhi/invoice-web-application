@@ -9,6 +9,39 @@ import {
 import { authService } from "../services/authService";
 import type { SignupData, AuthResponse } from "../services/authService";
 
+const convertAndSaveLogoToBase64 = async (url: string, companyId: number): Promise<void> => {
+  try {
+    console.log("🔄 Converting logo to base64 for localStorage...");
+    
+    const response = await fetch(url, {
+      mode: 'cors',
+      credentials: 'omit',
+    });
+
+    if (!response.ok) {
+      console.warn(`⚠️ Logo fetch failed: ${response.status}`);
+      return;
+    }
+
+    const blob = await response.blob();
+    
+    if (!blob.type.startsWith('image/')) {
+      console.warn(`⚠️ Invalid image type: ${blob.type}`);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64data = reader.result as string;
+      localStorage.setItem(`company_logo_base64_${companyId}`, base64data);
+      console.log(`✅ Logo saved to localStorage (${(base64data.length / 1024).toFixed(2)} KB)`);
+    };
+    reader.readAsDataURL(blob);
+  } catch (error) {
+    console.error("❌ Failed to convert logo to base64:", error);
+  }
+};
+
 interface User {
   userID: number;
   firstName: string;
@@ -20,11 +53,11 @@ interface Company {
   companyID: number;
   companyName: string;
   currencySymbol: string;
-  logoUrl?: string; // ✅ Added
-  thumbnailUrl?: string; // ✅ Added
-  address?: string; // ✅ Added (for invoice)
-  city?: string; // ✅ Added (for invoice)
-  zipCode?: string; // ✅ Added (for invoice)
+  logoUrl?: string;
+  thumbnailUrl?: string;
+  address?: string;
+  city?: string;
+  zipCode?: string;
 }
 
 interface AuthContextType {
@@ -37,14 +70,15 @@ interface AuthContextType {
     company: Company,
     token: string,
     rememberMe: boolean
-  ) => Promise<void>; // ✅ Changed to async
+  ) => Promise<void>;
   signup: (data: SignupData) => Promise<AuthResponse>;
   logout: () => void;
+  refreshLogo: () => Promise<void>; // ✅ NEW: Manually refresh logo when SAS expires
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Storage helper functions (keep as is)
+// Storage helper functions
 const storage = {
   set: (key: string, value: any, rememberMe: boolean = true) => {
     const data = typeof value === "object" ? JSON.stringify(value) : value;
@@ -90,6 +124,87 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // ✅ Helper function to fetch company logos with retry logic
+  const fetchCompanyLogos = async (
+    companyID: number,
+    retries: number = 3,
+    delay: number = 1000
+  ): Promise<{ logoUrl: string; thumbnailUrl: string }> => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        console.log(`🔄 Fetching logos (attempt ${attempt}/${retries})...`);
+
+        const [logoUrl, thumbnailUrl] = await Promise.all([
+          authService.getCompanyLogo(companyID),
+          authService.getCompanyLogoThumbnail(companyID),
+        ]);
+
+        // ✅ Check if URLs are valid (not empty)
+        if (logoUrl && thumbnailUrl) {
+          console.log("✅ Logo URLs fetched successfully");
+          return { logoUrl, thumbnailUrl };
+        }
+
+        // ✅ If empty, retry after delay
+        if (attempt < retries) {
+          console.warn(`⚠️ Empty logo URLs, retrying in ${delay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      } catch (error) {
+        console.error(`❌ Logo fetch attempt ${attempt} failed:`, error);
+
+        if (attempt < retries) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    // ✅ Return empty strings if all retries fail
+    console.warn("⚠️ Failed to fetch logos after all retries");
+    return { logoUrl: "", thumbnailUrl: "" };
+  };
+
+  // ✅ NEW: Refresh logo function (for when SAS token expires)
+  const refreshLogo = async () => {
+    if (!company?.companyID) {
+      console.warn("⚠️ No company ID available for logo refresh");
+      return;
+    }
+
+    try {
+      console.log("🔄 Refreshing company logos...");
+
+      const { logoUrl, thumbnailUrl } = await fetchCompanyLogos(
+        company.companyID,
+        3,
+        1500
+      );
+
+      if (logoUrl || thumbnailUrl) {
+        const updatedCompany = {
+          ...company,
+          logoUrl: logoUrl || company.logoUrl,
+          thumbnailUrl: thumbnailUrl || company.thumbnailUrl,
+        };
+
+        // Update state
+        setCompany(updatedCompany);
+
+        // Update storage
+        const isLocalStorage = !!localStorage.getItem("token");
+        storage.set("company", updatedCompany, isLocalStorage);
+
+        console.log("✅ Logos refreshed successfully");
+        console.log("   New logo URL:", logoUrl);
+        console.log("   New thumbnail URL:", thumbnailUrl);
+      } else {
+        console.warn("⚠️ Logo refresh returned empty URLs");
+      }
+    } catch (error) {
+      console.error("❌ Failed to refresh logos:", error);
+    }
+  };
+
   // Check for existing session on mount
   useEffect(() => {
     const checkAuth = async () => {
@@ -104,18 +219,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // ✅ If logo URLs not in storage, fetch them
           if (savedCompany.companyID && !savedCompany.logoUrl) {
             try {
-              const [logoUrl, thumbnailUrl] = await Promise.all([
-                authService.getCompanyLogo(savedCompany.companyID),
-                authService.getCompanyLogoThumbnail(savedCompany.companyID),
-              ]);
+              const { logoUrl, thumbnailUrl } = await fetchCompanyLogos(
+                savedCompany.companyID,
+                3,
+                1500
+              );
 
               const updatedCompany = {
                 ...savedCompany,
-                logoUrl,
-                thumbnailUrl,
+                logoUrl: logoUrl || undefined,
+                thumbnailUrl: thumbnailUrl || undefined,
               };
 
               setCompany(updatedCompany);
+              
               // Update storage with logo URLs
               storage.set(
                 "company",
@@ -143,7 +260,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     checkAuth();
   }, []);
 
-  // ✅ Update setAuthData to fetch logos
+  // ✅ Set auth data with logo fetching
   const setAuthData = async (
     userData: User,
     companyData: Company,
@@ -153,48 +270,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       let enrichedCompany = companyData;
 
-      // ✅ Only fetch logos if companyID exists
       if (companyData.companyID) {
-        try {
-          console.log(
-            "🔄 Fetching company logos for ID:",
-            companyData.companyID
-          );
+        console.log("🔄 Fetching company logos for ID:", companyData.companyID);
 
-          const [logoUrl, thumbnailUrl] = await Promise.all([
-            authService.getCompanyLogo(companyData.companyID),
-            authService.getCompanyLogoThumbnail(companyData.companyID),
-          ]);
+        try {
+          // ✅ Use retry logic
+          const { logoUrl, thumbnailUrl } = await fetchCompanyLogos(
+            companyData.companyID,
+            3, // 3 retries
+            1500 // 1.5 second delay between retries
+          );
 
           console.log("✅ Logo URL:", logoUrl);
           console.log("✅ Thumbnail URL:", thumbnailUrl);
 
           enrichedCompany = {
             ...companyData,
-            logoUrl,
-            thumbnailUrl,
+            logoUrl: logoUrl || undefined,
+            thumbnailUrl: thumbnailUrl || undefined,
           };
         } catch (logoError) {
           console.warn("⚠️ Failed to fetch company logos:", logoError);
-          // Continue without logos
           enrichedCompany = companyData;
         }
       }
 
-      // Save to storage
+      // ✅ Save to storage
       storage.set("token", token, rememberMe);
       storage.set("user", userData, rememberMe);
       storage.set("company", enrichedCompany, rememberMe);
 
-      // Update state
+      // ✅ Update state
       setUser(userData);
       setCompany(enrichedCompany);
 
       console.log("✅ Auth data set successfully");
+      console.log("✅ Final company data:", enrichedCompany);
     } catch (error) {
       console.error("❌ Error in setAuthData:", error);
 
-      // Fallback: Save without logos
+      // Fallback
       storage.set("token", token, rememberMe);
       storage.set("user", userData, rememberMe);
       storage.set("company", companyData, rememberMe);
@@ -204,17 +319,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // ✅ Update signup method
+  // ✅ Signup method with logo fetch
   const signup = async (data: SignupData) => {
     try {
+      console.log("📤 Starting signup process...");
+
       const response = await authService.signup(data);
 
-      // Automatically login with logo fetch
+      console.log("✅ Signup successful, setting auth data...");
+
+      // ✅ Automatically login with logo fetch (with retry)
       await setAuthData(response.user, response.company, response.token, true);
+
+      console.log("✅ Auth data set, signup complete");
 
       return response;
     } catch (error: any) {
-      console.error("Signup error:", error);
+      console.error("❌ Signup error:", error);
       throw new Error(
         error.response?.data?.message ||
           error.response?.data ||
@@ -223,16 +344,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = () => {
-    storage.remove("token");
-    storage.remove("user");
-    storage.remove("company");
+const logout = () => {
+  // ✅ Clear logo from localStorage
+  if (company?.companyID) {
+    localStorage.removeItem(`company_logo_base64_${company.companyID}`);
+    console.log("🗑️ Cleared logo from localStorage");
+  }
 
-    setUser(null);
-    setCompany(null);
+  storage.remove("token");
+  storage.remove("user");
+  storage.remove("company");
 
-    window.location.href = "/login";
-  };
+  setUser(null);
+  setCompany(null);
+
+  window.location.href = "/login";
+};
+  
 
   const value: AuthContextType = {
     user,
@@ -242,6 +370,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAuthData,
     signup,
     logout,
+    refreshLogo, // ✅ NEW: Export refresh function
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

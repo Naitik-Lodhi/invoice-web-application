@@ -32,17 +32,23 @@ export const itemService = {
     return response.data;
   },
 
- // Line ~25 ke around
-getLookupList: async (): Promise<Array<{
+  getLookupList: async (): Promise<Array<{
   itemID: number; 
   itemName: string; 
   salesRate: number;     
   discountPct: number;   
 }>> => {
   const response = await axiosInstance.get(API_ENDPOINTS.items.GET_LOOKUP_LIST);
+  
+  // ✅ Detailed logging to check exact field names
+  console.log("🔍 Item lookup RAW response:", response.data);
+  if (response.data && response.data.length > 0) {
+    console.log("📋 First item structure:", response.data[0]);
+    console.log("🔑 Available keys:", Object.keys(response.data[0]));
+  }
+  
   return response.data;
 },
-
 
 create: async (data: ItemFormData): Promise<Item> => {
   const payload = {

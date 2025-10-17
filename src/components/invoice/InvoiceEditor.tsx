@@ -135,29 +135,34 @@ const InvoiceEditor = ({
     }
   }, [watch, mode, invoiceId]);
 
-  // Load available items
-  useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const items = await itemService.getLookupList();
-        const transformed = items.map((item) => ({
-          id: String(item.itemID),
-          name: item.itemName,
-          description: "",
-          rate: item.salesRate,
-          discountPct: item.discountPct,
-        }));
-        setAvailableItems(transformed);
-      } catch (error) {
-        console.error("Failed to load items:", error);
-        toast.error("Failed to load items");
-      }
-    };
-
-    if (open) {
-      fetchItems();
+  // Load available items - USE FULL LIST
+useEffect(() => {
+  const fetchItems = async () => {
+    try {
+      // ✅ Use getList() instead of getLookupList() to get full item details
+      const items = await itemService.getList();
+      console.log("📦 Full items from backend:", items);
+      
+      const transformed = items.map((item) => ({
+        id: String(item.itemID),
+        name: item.itemName,
+        description: item.description || "",
+        rate: item.salesRate || 0,  // ✅ Now this should have value
+        discountPct: item.discountPct || 0,  // ✅ Now this should have value
+      }));
+      
+      console.log("🔄 Transformed items with rates:", transformed);
+      setAvailableItems(transformed);
+    } catch (error) {
+      console.error("Failed to load items:", error);
+      toast.error("Failed to load items");
     }
-  }, [open]);
+  };
+
+  if (open) {
+    fetchItems();
+  }
+}, [open]);
 
   // Load invoice for editing
   const getInvoiceById = useCallback(async () => {
@@ -233,11 +238,11 @@ const InvoiceEditor = ({
       reset(getDefaultValues());
       setLineItems([
         {
-          id: "",
+          id: String(Date.now()), // ✅ Unique ID
           itemId: "",
           itemName: "",
           description: "",
-          quantity: 0,
+          quantity: 1, // ✅ Default quantity 1
           rate: 0,
           discountPct: 0,
           amount: 0,
@@ -396,7 +401,7 @@ const InvoiceEditor = ({
   }, [open, isFormValid, handleSubmit, onSubmit]);
 
   return (
-    <Dialog fullScreen open={open} onClose={handleClose}>
+    <Dialog open={open} onClose={handleClose} maxWidth={"lg"}>
       <AppBar
         sx={{
           position: "relative",

@@ -346,19 +346,47 @@ export const invoiceService = {
   },
 
   // Existing: Get 12 month trend
-  getTrend12m: async (asOf?: string): Promise<TrendData[]> => {
-    try {
-    const params = asOf ? { asOf } : undefined;
+  // src/services/invoiceService.ts
+// getTrend12m function update karo
+
+// src/services/invoiceService.ts
+
+getTrend12m: async (asOf?: string): Promise<TrendData[]> => {
+  try {
+    // ✅ Current date generate karo agar nahi hai toh
+    let dateToUse = asOf;
+    
+    if (!dateToUse) {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      dateToUse = `${year}-${month}-${day}`;
+    }
+
+    console.log("🔍 TREND API DEBUG:");
+    console.log("   Input asOf:", asOf);
+    console.log("   Date to use:", dateToUse);
+    console.log("   API Endpoint:", API_ENDPOINTS.invoices.GET_TREND_12M);
+    console.log("   Full URL will be:", `${API_ENDPOINTS.invoices.GET_TREND_12M}?asOf=${dateToUse}`);
+
     const response = await axiosInstance.get(
       API_ENDPOINTS.invoices.GET_TREND_12M,
-      { params }
+      { 
+        params: { asOf: dateToUse }
+      }
     );
 
-    console.log("🔍 Trend API Response:", response.data);
+    console.log("📥 TREND API RESPONSE:");
+    console.log("   Status:", response.status);
+    console.log("   Data length:", response.data?.length);
+    console.log("   Full data:", response.data);
+    
+    // ✅ Response headers bhi check karo (caching ke liye)
+    console.log("   Response headers:", response.headers);
 
-     const transformedData = (response.data || [])
+    const transformedData = (response.data || [])
       .map((item: any) => {
-        // Validate required fields
         if (!item.monthStart) {
           console.warn("⚠️ Missing monthStart in item:", item);
           return null;
@@ -372,12 +400,15 @@ export const invoiceService = {
       })
       .filter((item: any) => item !== null);
 
+    console.log("✅ Transformed Data:", transformedData);
     return transformedData;
-    } catch (error) {
+  } catch (error: any) {
     console.error("❌ Error fetching trend data:", error);
+    console.error("   Error response:", error.response?.data);
+    console.error("   Error status:", error.response?.status);
     return [];
   }
-  },
+},
 
   // Existing: Get top items
   getTopItems: async (

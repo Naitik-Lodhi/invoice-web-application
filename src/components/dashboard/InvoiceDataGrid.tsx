@@ -139,6 +139,7 @@ const InvoiceDataGrid = ({
               fontSize: isMobile ? "0.75rem" : isTablet ? "0.8rem" : "0.875rem",
               color: "#171717",
               cursor: !isMobile ? "pointer" : undefined,
+              mt:2.5,
               "&:hover": !isMobile
                 ? { color: "#000", textDecoration: "underline" }
                 : undefined,
@@ -168,6 +169,7 @@ const InvoiceDataGrid = ({
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
+               mt:2.5,
             }}
           >
             {isMobile && params.value?.length > 15
@@ -272,6 +274,7 @@ const InvoiceDataGrid = ({
               fontWeight: 600,
               fontSize: isMobile ? "0.75rem" : isTablet ? "0.85rem" : "0.95rem",
               color: "#171717",
+               mt:2.5,
             }}
           >
             {formatCurrency(params.row.total || 0)}

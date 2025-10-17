@@ -261,32 +261,38 @@ const DashboardPage = () => {
     exportInvoicesToExcel(filteredInvoices, companyCurrency);
   };
 
-  // ✅ Update handlePrintInvoice function (find and replace)
-  const handlePrintInvoice = async (id: string) => {
-    try {
-      toast.info("Preparing invoice for print...");
+  // Dashboard.tsx - Update handlePrintInvoice
 
-      // Fetch full invoice details with item names
-      const invoiceForPrint = await invoiceService.getInvoiceForPrint(
-        parseInt(id)
-      );
+const handlePrintInvoice = async (id: string) => {
+  try {
+    console.log("🖨️ Print button clicked for invoice:", id);
+    toast.info("Preparing invoice for print...");
 
-      // Get company info from context
-      const companyInfo = {
-        name: company?.companyName || "Your Company",
-        logo: company?.logoUrl || "",
-        address: company?.address || "",
-        city: company?.city || "",
-        zipCode: company?.zipCode || "",
-      };
+    const invoiceForPrint = await invoiceService.getInvoiceForPrint(
+      parseInt(id)
+    );
 
-      // Print invoice with company details
-      printInvoice(invoiceForPrint, companyCurrency, companyInfo);
-    } catch (error: any) {
-      console.error("Print error:", error);
-      toast.error("Failed to prepare invoice for printing");
-    }
-  };
+    console.log("📄 Invoice data fetched:", invoiceForPrint);
+
+    // ✅ Pass companyID for localStorage lookup
+    const companyInfo = {
+      name: company?.companyName || "Your Company",
+      companyID: company?.companyID, // ✅ NEW: For localStorage key
+      address: company?.address || "",
+      city: company?.city || "",
+      zipCode: company?.zipCode || "",
+    };
+
+    console.log("🏢 Company info for print:", companyInfo);
+
+    await printInvoice(invoiceForPrint, companyCurrency, companyInfo);
+
+    console.log("✅ Print function completed");
+  } catch (error: any) {
+    console.error("❌ Print error:", error);
+    toast.error("Failed to prepare invoice for printing");
+  }
+};
 
   const handleDeleteInvoice = (id: string) => {
     setInvoiceToDelete(id);
@@ -326,11 +332,12 @@ const DashboardPage = () => {
 
       try {
         // ✅ ONLY fetch filter-dependent APIs
-        const [metricsData, listDataWithCounts, topItemsData] = await Promise.all([
-          invoiceService.getMetrics(from, to),
-          invoiceService.getListWithItemCounts(from, to),
-          invoiceService.getTopItems(5, from, to),
-        ]);
+        const [metricsData, listDataWithCounts, topItemsData] =
+          await Promise.all([
+            invoiceService.getMetrics(from, to),
+            invoiceService.getListWithItemCounts(from, to),
+            invoiceService.getTopItems(5, from, to),
+          ]);
 
         console.log("📊 Filtered Data Received:", {
           metrics: metricsData,
@@ -387,7 +394,6 @@ const DashboardPage = () => {
           setTopItems({ items: [] });
         }
         setIsLoadingTopItems(false);
-
       } catch (err: any) {
         console.error("❌ Error fetching filtered data:", err);
         setError(err);
@@ -399,64 +405,86 @@ const DashboardPage = () => {
     [activeFilter, customDateRange]
   );
 
-   const fetchTrendData = useCallback(async () => {
-    setIsLoadingTrend(true);
-    try {
-      const trendData = await invoiceService.getTrend12m();
+  // src/components/dashboard/DashboardPage.tsx
+// fetchTrendData function ko replace karo
+
+const fetchTrendData = useCallback(async () => {
+  setIsLoadingTrend(true);
+  try {
+    // ✅ FIX: Get ACTUAL current date (not static)
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+    
+    console.log("📅 Today's Date:", formattedDate);
+    console.log("📅 Full Date Object:", today.toString());
+    
+    const trendData = await invoiceService.getTrend12m(formattedDate);
+
+    if (trendData && Array.isArray(trendData) && trendData.length > 0) {
+      // ✅ Shift all months by +1 to compensate for backend timezone bug
+      const TIMEZONE_OFFSET_MONTHS = 1;
       
-      console.log("📈 Trend Data Received:", trendData?.length);
+      const formattedMonths = trendData
+        .map((item, index) => {
+          if (!item || !item.month) {
+            console.warn(`⚠️ Invalid trend item at index ${index}:`, item);
+            return null;
+          }
 
-      if (trendData && Array.isArray(trendData) && trendData.length > 0) {
-        const formattedMonths = trendData
-          .map((item, index) => {
-            if (!item || !item.month) {
-              console.warn(`⚠️ Invalid trend item at index ${index}:`, item);
+          let monthStr = "";
+          
+          try {
+            // ✅ Parse and add 1 month to fix backend bug
+            const backendDate = new Date(item.month);
+            backendDate.setMonth(backendDate.getMonth() + TIMEZONE_OFFSET_MONTHS);
+            
+            if (isNaN(backendDate.getTime())) {
+              console.error(`❌ Invalid date at index ${index}:`, item.month);
               return null;
             }
 
-            let monthStr = "";
-            try {
-              const date = new Date(item.month);
+            monthStr = backendDate.toLocaleDateString("en-US", {
+              month: "short",
+              year: "2-digit",
+            });
 
-              if (isNaN(date.getTime())) {
-                console.error(`❌ Invalid date at index ${index}:`, item.month);
-                return null;
-              }
+            console.log(
+              `✅ Month ${index}:`,
+              `API: ${item.month}`,
+              `→ Fixed: ${monthStr}`,
+              `Amount: ${item.amount}`,
+              `Count: ${item.count}`
+            );
+          } catch (error) {
+            console.error(`❌ Error parsing date at index ${index}:`, error);
+            return null;
+          }
 
-              monthStr = date.toLocaleDateString("en-US", {
-                month: "short",
-                year: "2-digit",
-              });
+          return {
+            month: monthStr,
+            amount: Number(item.amount) || 0,
+            count: Number(item.count) || 0,
+          };
+        })
+        .filter((item) => item !== null);
 
-              console.log(`✅ Formatted month ${index}: ${item.month} → ${monthStr}`);
-            } catch (error) {
-              console.error(`❌ Error parsing date at index ${index}:`, error);
-              return null;
-            }
-
-            return {
-              month: monthStr,
-              amount: Number(item.amount) || 0,
-              count: Number(item.count) || 0,
-            };
-          })
-          .filter((item) => item !== null);
-
-        console.log("📊 Final Formatted Trend:", formattedMonths);
-        setTrend12m({ months: formattedMonths });
-      } else {
-        console.warn("⚠️ No trend data or empty array");
-        setTrend12m({ months: [] });
-      }
-    } catch (err: any) {
-      console.error("❌ Error fetching trend data:", err);
+      console.log("📊 Final Formatted Trend:", formattedMonths);
+      setTrend12m({ months: formattedMonths });
+    } else {
+      console.warn("⚠️ No trend data or empty array");
       setTrend12m({ months: [] });
-    } finally {
-      setIsLoadingTrend(false);
     }
-  }, []); // ✅ No dependencies - called only once
-
- useEffect(() => {
+  } catch (err: any) {
+    console.error("❌ Error fetching trend data:", err);
+    setTrend12m({ months: [] });
+  } finally {
+    setIsLoadingTrend(false);
+  }
+}, []); // ✅ Empty dependency array - will use current date on each call
+  useEffect(() => {
     console.log("🎬 Initial load - fetching trend data");
     fetchTrendData();
   }, []); // ✅ Empty dependency - runs only once

@@ -25,6 +25,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DeleteIcon from "@mui/icons-material/Delete";
 import type { LineItem } from "./InvoiceEditor";
 import { itemService } from "../../services/itemService";
+import { toast } from "../../utils/toast";
 
 interface LineItemsGridProps {
   lineItems: LineItem[];
@@ -75,15 +76,45 @@ const LineItemsGrid = ({
   };
 
   // Handle item selection
-  const handleItemSelect = (lineId: string, itemId: string) => {
-    const selectedItem = availableItems.find((item: any) => item.id === itemId);
+ const handleItemSelect = async (lineId: string, itemId: string) => {
+  try {
+    // ✅ First check if we have cached data
+    let selectedItem = availableItems.find((item: any) => item.id === itemId);
+    
+    // ✅ If rate/discount missing, fetch full item details
+    if (selectedItem && (!selectedItem.rate || selectedItem.rate === 0)) {
+      console.log("📡 Fetching full item details for:", itemId);
+      
+      const fullItemDetails = await itemService.getById(parseInt(itemId));
+      console.log("✅ Full item details:", fullItemDetails);
+      
+      // Update selected item with full details
+      selectedItem = {
+        ...selectedItem,
+        rate: fullItemDetails.salesRate || 0,
+        discountPct: fullItemDetails.discountPct || 0,
+        description: fullItemDetails.description || "",
+      };
+      
+      // Optional: Update cache for future use
+      const updatedItems = availableItems.map((item: any) => 
+        item.id === itemId 
+          ? { ...item, rate: fullItemDetails.salesRate, discountPct: fullItemDetails.discountPct }
+          : item
+      );
+      // You might need to pass setAvailableItems as prop to update cache
+    }
+
     if (!selectedItem) {
       console.warn("Item not found:", itemId);
       return;
     }
 
-    console.log("Selected item:", selectedItem); // ✅ Debug ke liye
-
+    console.log("✅ Using item with rates:", selectedItem);
+    
+    const currentLine = lineItems.find(l => l.id === lineId);
+    const currentQty = currentLine?.quantity || 1;
+    
     setLineItems(
       lineItems.map((line) =>
         line.id === lineId
@@ -91,11 +122,12 @@ const LineItemsGrid = ({
               ...line,
               itemId: selectedItem.id,
               itemName: selectedItem.name,
-              description: selectedItem.description || "", // ✅ Fallback
+              description: selectedItem.description || "",
+              quantity: currentQty,
               rate: selectedItem.rate || 0,
               discountPct: selectedItem.discountPct || 0,
               amount: calculateAmount(
-                line.quantity,
+                currentQty,
                 selectedItem.rate || 0,
                 selectedItem.discountPct || 0
               ),
@@ -103,7 +135,11 @@ const LineItemsGrid = ({
           : line
       )
     );
-  };
+  } catch (error) {
+    console.error("Error fetching item details:", error);
+    toast.error("Failed to load item details");
+  }
+};
 
   // Handle field change
   const handleFieldChange = (
@@ -141,7 +177,7 @@ const LineItemsGrid = ({
         itemId: "",
         itemName: "",
         description: "",
-        quantity: 0,
+        quantity: 1,
         rate: 0,
         discountPct: 0,
         amount: 0,
