@@ -70,17 +70,21 @@ Backend API is configurable via `VITE_API_BASE_URL`. JWT is attached via Axios i
 
 ---
 
-## 🖼️ Screenshots (placeholders)
+## 🖼️ Screenshots
 
+<p align="center">
+  <strong>Login</strong><br>
+  <img src="public/screenshot-login.png" alt="Login Page" width="400" />
+  <br><br>
 
-Login
-<img src="public/screenshot-login.png" alt="Login Page" width="96" />
-Dashboard
-<img src="public/screenshot-dashboard.png" alt="Dashboard Page" width="96" />
-Invoices
-<img src="public/screenshot-invoices.png" alt="Bill" width="96" />
+<strong>Dashboard</strong><br>
+<img src="public/screenshot-dashboard.png" alt="Dashboard Page" width="400" />
+<br><br>
 
+<strong>Invoices</strong><br>
+<img src="public/screenshot-invoices.png" alt="Bill" width="400" />
 
+</p>
 
 ---
 
@@ -221,4 +225,3 @@ Deploy the `dist/` folder to your static host of choice.
 ## 📜 License
 
 MIT © 2025 — Invoice App
-
