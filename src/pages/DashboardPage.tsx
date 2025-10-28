@@ -9,7 +9,15 @@ import {
   Typography,
   DialogActions,
   Button,
+  Paper,
+  LinearProgress,
+  IconButton,
+  Modal,
 } from "@mui/material";
+import { List, ListItem, Divider } from "@mui/material";
+
+import CloseIcon from "@mui/icons-material/Close";
+import PersonIcon from "@mui/icons-material/Person";
 import { useEffect, useState, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
 import dayjs, { Dayjs } from "dayjs";
@@ -131,6 +139,57 @@ const DashboardPage = () => {
   const [editingInvoiceId, setEditingInvoiceId] = useState<
     string | undefined
   >();
+
+  const [customerModalOpen, setCustomerModalOpen] = useState(false); // Changed name
+  const [topCustomers, setTopCustomers] = useState<
+    { name: string; amount: number; percentage: number }[]
+  >([]);
+
+  // Add this function to calculate top customers (add it with your other useCallback functions)
+  const calculateTopCustomers = useCallback(() => {
+    if (!invoiceList?.invoices || invoiceList.invoices.length === 0) return [];
+
+    // Create a map to aggregate amounts by customer
+    const customerMap = new Map<string, number>();
+
+    invoiceList.invoices.forEach((invoice: any) => {
+      const customer = invoice.customer || "Unknown Customer";
+      const amount = invoice.total || 0;
+      customerMap.set(customer, (customerMap.get(customer) || 0) + amount);
+    });
+
+    // Calculate total for percentage
+    const total = metrics?.totalAmount || 0;
+
+    // Convert to array, sort by amount, and take top 5
+    return Array.from(customerMap.entries())
+      .map(([name, amount]) => ({
+        name,
+        amount,
+        percentage: total > 0 ? (amount / total) * 100 : 0,
+      }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+  }, [invoiceList, metrics?.totalAmount]);
+
+  useEffect(() => {
+    const customers = calculateTopCustomers();
+    setTopCustomers(customers);
+  }, [calculateTopCustomers]);
+
+  const handleCustomerCardClick = (event: React.MouseEvent<HTMLElement>) => {
+    if (topCustomers.length > 0) {
+      setCustomerModalOpen(true);
+    }
+  };
+
+  const handleCustomerModalClose = () => {
+    setCustomerModalOpen(false);
+  };
+
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat("en-US").format(num);
+  };
 
   // Get next invoice number
   const getNextInvoiceNumber = useCallback(() => {
@@ -261,38 +320,69 @@ const DashboardPage = () => {
     exportInvoicesToExcel(filteredInvoices, companyCurrency);
   };
 
-  // Dashboard.tsx - Update handlePrintInvoice
+  const handlePrintInvoice = async (id: string) => {
+    try {
+      console.log("🖨️ Print button clicked for invoice:", id);
+      toast.info("Preparing invoice for print...");
 
-const handlePrintInvoice = async (id: string) => {
-  try {
-    console.log("🖨️ Print button clicked for invoice:", id);
-    toast.info("Preparing invoice for print...");
+      const invoiceForPrint = await invoiceService.getInvoiceForPrint(
+        parseInt(id)
+      );
 
-    const invoiceForPrint = await invoiceService.getInvoiceForPrint(
-      parseInt(id)
-    );
+      console.log("📄 Invoice data fetched:", invoiceForPrint);
 
-    console.log("📄 Invoice data fetched:", invoiceForPrint);
+      // ✅ Pass companyID for localStorage lookup
+      const companyInfo = {
+        name: company?.companyName || "Your Company",
+        companyID: company?.companyID, // ✅ NEW: For localStorage key
+        address: company?.address || "",
+        city: company?.city || "",
+        zipCode: company?.zipCode || "",
+      };
 
-    // ✅ Pass companyID for localStorage lookup
-    const companyInfo = {
-      name: company?.companyName || "Your Company",
-      companyID: company?.companyID, // ✅ NEW: For localStorage key
-      address: company?.address || "",
-      city: company?.city || "",
-      zipCode: company?.zipCode || "",
-    };
+      console.log("🏢 Company info for print:", companyInfo);
 
-    console.log("🏢 Company info for print:", companyInfo);
+      await printInvoice(invoiceForPrint, companyCurrency, companyInfo);
 
-    await printInvoice(invoiceForPrint, companyCurrency, companyInfo);
+      console.log("✅ Print function completed");
+    } catch (error: any) {
+      console.error("❌ Print error:", error);
+      toast.error("Failed to prepare invoice for printing");
+    }
+  };
 
-    console.log("✅ Print function completed");
-  } catch (error: any) {
-    console.error("❌ Print error:", error);
-    toast.error("Failed to prepare invoice for printing");
-  }
-};
+  const handlePrintMultiple = async (ids: string[]) => {
+    try {
+      console.log("🖨️ Printing multiple invoices:", ids);
+      toast.info(`Preparing ${ids.length} invoices for print...`);
+
+      // Fetch all selected invoices
+      const invoicesForPrint = await Promise.all(
+        ids.map((id) => invoiceService.getInvoiceForPrint(parseInt(id)))
+      );
+
+      const companyInfo = {
+        name: company?.companyName || "Your Company",
+        companyID: company?.companyID,
+        address: company?.address || "",
+        city: company?.city || "",
+        zipCode: company?.zipCode || "",
+      };
+
+      // Import the new function
+      const { printMultipleInvoices } = await import("../utils/printInvoice");
+      await printMultipleInvoices(
+        invoicesForPrint,
+        companyCurrency,
+        companyInfo
+      );
+
+      console.log("✅ Multiple print completed");
+    } catch (error: any) {
+      console.error("❌ Multiple print error:", error);
+      toast.error("Failed to prepare invoices for printing");
+    }
+  };
 
   const handleDeleteInvoice = (id: string) => {
     setInvoiceToDelete(id);
@@ -405,85 +495,27 @@ const handlePrintInvoice = async (id: string) => {
     [activeFilter, customDateRange]
   );
 
-  // src/components/dashboard/DashboardPage.tsx
-// fetchTrendData function ko replace karo
+  const fetchTrendData = useCallback(async () => {
+    setIsLoadingTrend(true);
+    try {
+      const trendData = await invoiceService.getTrend12m();
 
-const fetchTrendData = useCallback(async () => {
-  setIsLoadingTrend(true);
-  try {
-    // ✅ FIX: Get ACTUAL current date (not static)
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day}`;
-    
-    console.log("📅 Today's Date:", formattedDate);
-    console.log("📅 Full Date Object:", today.toString());
-    
-    const trendData = await invoiceService.getTrend12m(formattedDate);
-
-    if (trendData && Array.isArray(trendData) && trendData.length > 0) {
-      // ✅ Shift all months by +1 to compensate for backend timezone bug
-      const TIMEZONE_OFFSET_MONTHS = 1;
-      
-      const formattedMonths = trendData
-        .map((item, index) => {
-          if (!item || !item.month) {
-            console.warn(`⚠️ Invalid trend item at index ${index}:`, item);
-            return null;
-          }
-
-          let monthStr = "";
-          
-          try {
-            // ✅ Parse and add 1 month to fix backend bug
-            const backendDate = new Date(item.month);
-            backendDate.setMonth(backendDate.getMonth() + TIMEZONE_OFFSET_MONTHS);
-            
-            if (isNaN(backendDate.getTime())) {
-              console.error(`❌ Invalid date at index ${index}:`, item.month);
-              return null;
-            }
-
-            monthStr = backendDate.toLocaleDateString("en-US", {
-              month: "short",
-              year: "2-digit",
-            });
-
-            console.log(
-              `✅ Month ${index}:`,
-              `API: ${item.month}`,
-              `→ Fixed: ${monthStr}`,
-              `Amount: ${item.amount}`,
-              `Count: ${item.count}`
-            );
-          } catch (error) {
-            console.error(`❌ Error parsing date at index ${index}:`, error);
-            return null;
-          }
-
-          return {
-            month: monthStr,
-            amount: Number(item.amount) || 0,
-            count: Number(item.count) || 0,
-          };
-        })
-        .filter((item) => item !== null);
-
-      console.log("📊 Final Formatted Trend:", formattedMonths);
-      setTrend12m({ months: formattedMonths });
-    } else {
-      console.warn("⚠️ No trend data or empty array");
+      if (trendData && Array.isArray(trendData) && trendData.length > 0) {
+        // ✅ No transformation needed - service already returns formatted data
+        console.log("📊 Trend data received:", trendData);
+        setTrend12m({ months: trendData });
+      } else {
+        console.warn("⚠️ No trend data or empty array");
+        setTrend12m({ months: [] });
+      }
+    } catch (err: any) {
+      console.error("❌ Error fetching trend data:", err);
       setTrend12m({ months: [] });
+    } finally {
+      setIsLoadingTrend(false);
     }
-  } catch (err: any) {
-    console.error("❌ Error fetching trend data:", err);
-    setTrend12m({ months: [] });
-  } finally {
-    setIsLoadingTrend(false);
-  }
-}, []); // ✅ Empty dependency array - will use current date on each call
+  }, []);
+
   useEffect(() => {
     console.log("🎬 Initial load - fetching trend data");
     fetchTrendData();
@@ -523,6 +555,8 @@ const fetchTrendData = useCallback(async () => {
       return matchesHeaderSearch && matchesGridSearch;
     }) || [];
 
+  const dashboardInvoices = filteredInvoices.slice(0, 5);
+
   const isInitialLoading = isLoadingMetrics && !metrics;
 
   if (error && !isInitialLoading) {
@@ -560,6 +594,9 @@ const fetchTrendData = useCallback(async () => {
           onFilterChange={isMobile ? onFilterChange : undefined}
           onClearFilter={isMobile ? onClearFilter : undefined}
           onCustomDateChange={isMobile ? onCustomDateChange : undefined}
+          // Add these new props
+          onTotalAmountClick={handleCustomerCardClick}
+          topCustomers={topCustomers}
         />
 
         <Box sx={{ mt: 3, mb: 2 }}>
@@ -578,19 +615,43 @@ const fetchTrendData = useCallback(async () => {
           />
         </Box>
 
-        <Box sx={{ width: "100%" }}>
-          <InvoiceDataGrid
-            invoices={filteredInvoices}
-            visibleColumns={columnVisibility
-              .filter((c) => c.visible)
-              .map((c) => c.field)}
-            onEdit={handleEditInvoice}
-            onPrint={handlePrintInvoice}
-            onDelete={handleDeleteInvoice}
-            loading={isLoadingList}
-            searchText={gridSearchText}
-            companyCurrency={companyCurrency}
-          />
+        <Box sx={{ mt: 3 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 2,
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Recent Invoices
+            </Typography>
+            <Button
+              variant="text"
+              onClick={() => (window.location.href = "/invoices")}
+              sx={{ textTransform: "none" }}
+            >
+              View All ({filteredInvoices.length})
+            </Button>
+          </Box>
+
+          <Box sx={{ width: "100%" }}>
+            <InvoiceDataGrid
+              invoices={dashboardInvoices}
+              visibleColumns={columnVisibility
+                .filter((c) => c.visible)
+                .map((c) => c.field)}
+              onEdit={handleEditInvoice}
+              onPrint={handlePrintInvoice}
+              onDelete={handleDeleteInvoice}
+              onPrintMultiple={handlePrintMultiple} // NEW
+              loading={isLoadingList}
+              searchText={gridSearchText}
+              companyCurrency={companyCurrency}
+              enableSelection={true} // NEW
+            />
+          </Box>
         </Box>
       </Box>
 
@@ -630,6 +691,346 @@ const fetchTrendData = useCallback(async () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Top Customers Modal */}
+      <Modal
+        open={customerModalOpen}
+        onClose={handleCustomerModalClose}
+        aria-labelledby="top-customers-modal"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Paper
+          sx={{
+            width: { xs: "95%", sm: "90%", md: "70%", lg: "60%" },
+            maxWidth: "800px",
+            maxHeight: "90vh",
+            overflow: "auto",
+            p: { xs: 2, sm: 3, md: 4 },
+            position: "relative",
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+          }}
+        >
+          {/* Close Button */}
+          <IconButton
+            onClick={handleCustomerModalClose}
+            sx={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              bgcolor: "rgba(0,0,0,0.05)",
+              "&:hover": {
+                bgcolor: "rgba(0,0,0,0.1)",
+              },
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+
+          {/* Modal Header */}
+          <Typography
+            variant="h5"
+            sx={{
+              mb: 1,
+              fontWeight: 600,
+              pr: 5,
+            }}
+          >
+            👥 Top 5 Customers
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Contribution to total revenue ({activeFilter})
+          </Typography>
+
+          {topCustomers.length > 0 ? (
+            <>
+              {/* Stats Summary */}
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 3,
+                  mb: 4,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Total from Top 5
+                  </Typography>
+                  <Typography variant="h6" fontWeight={600}>
+                    {companyCurrency}
+                    {topCustomers
+                      .reduce((sum, c) => sum + c.amount, 0)
+                      .toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Average per Customer
+                  </Typography>
+                  <Typography variant="h6" fontWeight={600}>
+                    {companyCurrency}
+                    {(
+                      topCustomers.reduce((sum, c) => sum + c.amount, 0) /
+                      topCustomers.length
+                    ).toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Coverage
+                  </Typography>
+                  <Typography variant="h6" fontWeight={600}>
+                    {topCustomers
+                      .reduce((sum, c) => sum + c.percentage, 0)
+                      .toFixed(1)}
+                    %
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Customer List with Progress Bars */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" fontWeight={600} mb={2}>
+                  Customer Breakdown
+                </Typography>
+                <List sx={{ p: 0 }}>
+                  {topCustomers.map((customer, index) => (
+                    <Box key={index}>
+                      <ListItem
+                        sx={{
+                          px: 0,
+                          py: 2,
+                          flexDirection: "column",
+                          alignItems: "stretch",
+                        }}
+                      >
+                        {/* Customer Header */}
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            width: "100%",
+                            mb: 1,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1.5,
+                            }}
+                          >
+                            {/* Rank Badge */}
+                            <Box
+                              sx={{
+                                minWidth: 36,
+                                height: 36,
+                                borderRadius: "50%",
+                                bgcolor:
+                                  index === 0
+                                    ? "#fbbf24"
+                                    : index === 1
+                                    ? "#d1d5db"
+                                    : index === 2
+                                    ? "#f97316"
+                                    : "#f3f4f6",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontWeight: 700,
+                                fontSize: "0.875rem",
+                                color: index < 3 ? "#fff" : "#374151",
+                                boxShadow:
+                                  index < 3
+                                    ? "0 2px 8px rgba(0,0,0,0.15)"
+                                    : "none",
+                              }}
+                            >
+                              #{index + 1}
+                            </Box>
+
+                            {/* Customer Name */}
+                            <Box>
+                              <Typography
+                                variant="body1"
+                                sx={{ fontWeight: 600 }}
+                              >
+                                {customer.name}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {customer.percentage.toFixed(1)}% of total
+                                revenue
+                              </Typography>
+                            </Box>
+                          </Box>
+
+                          {/* Amount */}
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontWeight: 700,
+                              color: theme.palette.primary.main,
+                            }}
+                          >
+                            {companyCurrency}
+                            {formatNumber(customer.amount)}
+                          </Typography>
+                        </Box>
+
+                        {/* Progress Bar */}
+                        <Box sx={{ width: "100%", mt: 1 }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={customer.percentage}
+                            sx={{
+                              height: 8,
+                              borderRadius: 1,
+                              bgcolor: "rgba(0,0,0,0.05)",
+                              "& .MuiLinearProgress-bar": {
+                                borderRadius: 1,
+                                bgcolor:
+                                  index === 0
+                                    ? "#fbbf24"
+                                    : index === 1
+                                    ? "#9ca3af"
+                                    : index === 2
+                                    ? "#f97316"
+                                    : theme.palette.primary.main,
+                              },
+                            }}
+                          />
+                        </Box>
+                      </ListItem>
+                      {index < topCustomers.length - 1 && (
+                        <Divider sx={{ my: 0.5 }} />
+                      )}
+                    </Box>
+                  ))}
+                </List>
+              </Box>
+
+              {/* Customer Cards Grid */}
+              <Box>
+                <Typography variant="subtitle1" fontWeight={600} mb={2}>
+                  Quick Overview
+                </Typography>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: {
+                      xs: "1fr",
+                      sm: "repeat(2, 1fr)",
+                      md: "repeat(3, 1fr)",
+                    },
+                    gap: 2,
+                  }}
+                >
+                  {topCustomers.slice(0, 3).map((customer, index) => (
+                    <Paper
+                      key={index}
+                      sx={{
+                        p: 2,
+                        bgcolor:
+                          index === 0
+                            ? "rgba(251, 191, 36, 0.1)"
+                            : index === 1
+                            ? "rgba(156, 163, 175, 0.1)"
+                            : "rgba(249, 115, 22, 0.1)",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 2,
+                        position: "relative",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {/* Rank Badge in Corner */}
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: -10,
+                          right: -10,
+                          width: 60,
+                          height: 60,
+                          bgcolor:
+                            index === 0
+                              ? "#fbbf24"
+                              : index === 1
+                              ? "#9ca3af"
+                              : "#f97316",
+                          borderRadius: "50%",
+                          opacity: 0.2,
+                        }}
+                      />
+
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mb: 0.5 }}
+                      >
+                        #{index + 1} Customer
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        fontWeight={600}
+                        sx={{ mb: 1 }}
+                      >
+                        {customer.name}
+                      </Typography>
+                      <Typography variant="h6" fontWeight={700}>
+                        {companyCurrency}
+                        {customer.amount.toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </Typography>
+                      <Box
+                        sx={{
+                          mt: 1,
+                          pt: 1,
+                          borderTop: "1px solid",
+                          borderColor: "divider",
+                        }}
+                      >
+                        <Typography variant="caption" color="text.secondary">
+                          {customer.percentage.toFixed(1)}% contribution
+                        </Typography>
+                      </Box>
+                    </Paper>
+                  ))}
+                </Box>
+              </Box>
+            </>
+          ) : (
+            <Box sx={{ py: 6, textAlign: "center" }}>
+              <PersonIcon
+                sx={{ fontSize: 64, color: "text.disabled", mb: 2 }}
+              />
+              <Typography color="text.secondary" variant="body1">
+                No customer data available
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Data will appear once invoices are created
+              </Typography>
+            </Box>
+          )}
+        </Paper>
+      </Modal>
     </>
   );
 };

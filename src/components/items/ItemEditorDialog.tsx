@@ -21,6 +21,7 @@ import type { ItemEditorProps, ItemFormData } from "../../types/itemTypes";
 import FileUploadField from "../form/FileUploadField";
 import FormField from "../form/FormField";
 import { itemService } from "../../services/itemService";
+import { toast } from "../../utils/toast";
 
 const ItemEditorDialog = ({
   open,
@@ -36,7 +37,7 @@ const ItemEditorDialog = ({
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-   const [imageRemoved, setImageRemoved] = useState(false);
+  const [imageRemoved, setImageRemoved] = useState(false);
 
   const {
     control,
@@ -91,7 +92,7 @@ const ItemEditorDialog = ({
     } else if (open && mode === "new") {
       setExistingImageUrl(null);
       setDataLoaded(true);
-       setImageRemoved(false); 
+      setImageRemoved(false);
       reset({
         itemPicture: null,
         itemName: "",
@@ -109,7 +110,7 @@ const ItemEditorDialog = ({
       setIsLoadingData(false);
       setConcurrencyError(false);
       setSaveError(null);
-       setImageRemoved(false);
+      setImageRemoved(false);
     }
   }, [open]);
 
@@ -120,6 +121,21 @@ const ItemEditorDialog = ({
     console.log("📝 Form data before submit:", data);
     console.log("📝 Item picture:", data.itemPicture);
     console.log("📝 Is File?", data.itemPicture instanceof File);
+
+    // ✅ VALIDATE before calling onSave
+    if (!data.itemName || data.itemName.trim() === "") {
+      toast.error("Item name is required");
+      return;
+    }
+
+    if (
+      data.saleRate === undefined ||
+      data.saleRate === null ||
+      isNaN(Number(data.saleRate))
+    ) {
+      toast.error("Valid sale rate is required");
+      return;
+    }
 
     setConcurrencyError(false);
     setSaveError(null);
@@ -146,7 +162,6 @@ const ItemEditorDialog = ({
       }
     }
   };
-
   const handleClose = () => {
     reset();
     setExistingImageUrl(null);
@@ -157,7 +172,7 @@ const ItemEditorDialog = ({
     onClose();
   };
 
-   const handleImageRemove = () => {
+  const handleImageRemove = () => {
     setImageRemoved(true);
     console.log("🗑️ Image marked for removal");
   };
@@ -196,7 +211,7 @@ const ItemEditorDialog = ({
 
       <DialogContent sx={{ p: { xs: 2, sm: 3 }, backgroundColor: "#fafafa" }}>
         {isLoadingData ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+          <Box sx={{ display: "flex", justifyContent: "center" }}>
             <CircularProgress />
           </Box>
         ) : (
@@ -236,7 +251,7 @@ const ItemEditorDialog = ({
               control={control}
               label="Description"
               placeholder="Enter item description"
-              rows={3}
+              rows={2}
               maxLength={500}
             />
 
@@ -360,7 +375,6 @@ const ItemEditorDialog = ({
             {/* Action Buttons */}
             <Box
               sx={{
-                mt: 4,
                 display: "flex",
                 gap: 2,
                 justifyContent: "flex-end",
@@ -372,7 +386,7 @@ const ItemEditorDialog = ({
                 onClick={handleClose}
                 disabled={isSubmitting}
                 fullWidth={isMobile}
-                sx={{ textTransform: "none", py: 1.5 }}
+                sx={{ textTransform: "none" }}
               >
                 Cancel
               </Button>

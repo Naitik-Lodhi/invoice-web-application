@@ -128,9 +128,9 @@ export const invoiceService = {
   // ✅ NEW: Get all items with caching
   getItems: async (): Promise<ItemData[]> => {
     const now = Date.now();
-    
+
     // Return cached data if still valid
-    if (itemsCache && (now - itemsCacheTime) < CACHE_DURATION) {
+    if (itemsCache && now - itemsCacheTime < CACHE_DURATION) {
       return itemsCache;
     }
 
@@ -147,10 +147,7 @@ export const invoiceService = {
   },
 
   // ✅ NEW: Helper function to get invoice list with item counts
-  getListWithItemCounts: async (
-    from?: string,
-    to?: string
-  ): Promise<any[]> => {
+  getListWithItemCounts: async (from?: string, to?: string): Promise<any[]> => {
     try {
       // Get invoice list
       const invoices = await invoiceService.getList(from, to);
@@ -203,9 +200,7 @@ export const invoiceService = {
         })),
       ];
 
-      console.log(
-        `✅ Fetched item counts for ${DETAIL_FETCH_LIMIT} invoices`
-      );
+      console.log(`✅ Fetched item counts for ${DETAIL_FETCH_LIMIT} invoices`);
 
       return invoicesWithCounts;
     } catch (error) {
@@ -345,71 +340,103 @@ export const invoiceService = {
     return response.data;
   },
 
-  // Existing: Get 12 month trend
-  // src/services/invoiceService.ts
-// getTrend12m function update karo
+  getTrend12m: async (asOf?: string): Promise<TrendData[]> => {
+    try {
+      // ✅ Current date generate karo agar nahi hai toh
+      let dateToUse = asOf;
 
-// src/services/invoiceService.ts
-
-getTrend12m: async (asOf?: string): Promise<TrendData[]> => {
-  try {
-    // ✅ Current date generate karo agar nahi hai toh
-    let dateToUse = asOf;
-    
-    if (!dateToUse) {
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      dateToUse = `${year}-${month}-${day}`;
-    }
-
-    console.log("🔍 TREND API DEBUG:");
-    console.log("   Input asOf:", asOf);
-    console.log("   Date to use:", dateToUse);
-    console.log("   API Endpoint:", API_ENDPOINTS.invoices.GET_TREND_12M);
-    console.log("   Full URL will be:", `${API_ENDPOINTS.invoices.GET_TREND_12M}?asOf=${dateToUse}`);
-
-    const response = await axiosInstance.get(
-      API_ENDPOINTS.invoices.GET_TREND_12M,
-      { 
-        params: { asOf: dateToUse }
+      if (!dateToUse) {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, "0");
+        const day = String(today.getDate()).padStart(2, "0");
+        dateToUse = `${year}-${month}-${day}`;
       }
-    );
 
-    console.log("📥 TREND API RESPONSE:");
-    console.log("   Status:", response.status);
-    console.log("   Data length:", response.data?.length);
-    console.log("   Full data:", response.data);
-    
-    // ✅ Response headers bhi check karo (caching ke liye)
-    console.log("   Response headers:", response.headers);
+      console.log("🔍 TREND API DEBUG:");
+      console.log("   Input asOf:", asOf);
+      console.log("   Date to use:", dateToUse);
+      console.log("   API Endpoint:", API_ENDPOINTS.invoices.GET_TREND_12M);
+      console.log(
+        "   Full URL will be:",
+        `${API_ENDPOINTS.invoices.GET_TREND_12M}?asOf=${dateToUse}`
+      );
 
-    const transformedData = (response.data || [])
-      .map((item: any) => {
-        if (!item.monthStart) {
-          console.warn("⚠️ Missing monthStart in item:", item);
-          return null;
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.invoices.GET_TREND_12M,
+        {
+          params: { asOf: dateToUse },
         }
+      );
 
-        return {
-          month: item.monthStart,
-          amount: Number(item.amountSum) || 0,
-          count: Number(item.invoiceCount) || 0,
-        };
-      })
-      .filter((item: any) => item !== null);
+      console.log("📥 TREND API RESPONSE:");
+      console.log("   Status:", response.status);
+      console.log("   Data length:", response.data?.length);
+      console.log("   Full data:", response.data);
+      console.log("   Response headers:", response.headers);
 
-    console.log("✅ Transformed Data:", transformedData);
-    return transformedData;
-  } catch (error: any) {
-    console.error("❌ Error fetching trend data:", error);
-    console.error("   Error response:", error.response?.data);
-    console.error("   Error status:", error.response?.status);
-    return [];
-  }
-},
+      // ✅ Month names array for formatting
+      const monthNames = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
 
+      const transformedData = (response.data || [])
+        .map((item: any, index: number) => {
+          if (!item.monthStart) {
+            console.warn("⚠️ Missing monthStart in item:", item);
+            return null;
+          }
+
+          try {
+            // ✅ Extract date parts directly (no timezone conversion)
+            // Format: "2025-10-28T00:00:00" -> "2025-10-28"
+            const dateOnly = item.monthStart.split("T")[0];
+            const [year, month, day] = dateOnly.split("-");
+
+            // ✅ Format as "Oct 25"
+            // const formattedMonth = `${monthNames[parseInt(month) - 1]} ${year.slice(-2)}`;
+            // invoiceService.ts - Update formatting line
+            const formattedMonth = `${day} ${monthNames[parseInt(month) - 1]}`;
+
+            console.log(
+              `✅ Month ${index}:`,
+              `API: ${item.monthStart}`,
+              `→ Parsed: ${dateOnly}`,
+              `→ Formatted: ${formattedMonth}`
+            );
+
+            return {
+              month: formattedMonth, // ✅ Already formatted string
+              amount: Number(item.amountSum) || 0,
+              count: Number(item.invoiceCount) || 0,
+            };
+          } catch (error) {
+            console.error(`❌ Error formatting date at index ${index}:`, error);
+            return null;
+          }
+        })
+        .filter((item: any) => item !== null);
+
+      console.log("✅ Transformed Data:", transformedData);
+      return transformedData;
+    } catch (error: any) {
+      console.error("❌ Error fetching trend data:", error);
+      console.error("   Error response:", error.response?.data);
+      console.error("   Error status:", error.response?.status);
+      return [];
+    }
+  },
   // Existing: Get top items
   getTopItems: async (
     topN: number = 5,

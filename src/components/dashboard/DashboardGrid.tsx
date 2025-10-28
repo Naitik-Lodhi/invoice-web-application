@@ -53,6 +53,9 @@ interface DashboardGridProps {
   onFilterChange?: (filter: string) => void;
   onClearFilter?: () => void;
   onCustomDateChange?: (start: Dayjs | null, end: Dayjs | null) => void;
+
+  onTotalAmountClick?: (event: React.MouseEvent<HTMLElement>) => void;
+  topCustomers?: { name: string; amount: number; percentage: number }[];
 }
 
 const dateFilters = ["Today", "Week", "Month", "Year", "Custom"];
@@ -69,6 +72,8 @@ const DashboardGrid = ({
   currentFilter,
   onFilterChange,
   onClearFilter,
+  onTotalAmountClick,
+  topCustomers,
 }: DashboardGridProps) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -175,11 +180,21 @@ const DashboardGrid = ({
               sx={{ borderRadius: 1 }}
             />
           ) : (
-            <StatCard
-              title="Total Amount"
-              value={`${companyCurrency}${formatNumber(totalAmount)}`}
-              subtext={currentFilter}
-            />
+            <Box
+              onClick={onTotalAmountClick}
+              sx={{
+                cursor:
+                  topCustomers && topCustomers.length > 0
+                    ? "pointer"
+                    : "default",
+              }}
+            >
+              <StatCard
+                title="Total Amount"
+                value={`${companyCurrency}${formatNumber(totalAmount)}`}
+                subtext={currentFilter}
+              />
+            </Box>
           )}
         </Grid>
 
@@ -209,7 +224,7 @@ const DashboardGrid = ({
                 sx={{
                   height: "100%",
                   display: "flex",
-                  flexDirection:"column",
+                  flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 1,

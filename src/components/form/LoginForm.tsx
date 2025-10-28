@@ -15,8 +15,8 @@ import FormHeader from "./FormHeader";
 import FormField from "./FormField";
 import PasswordField from "./PasswordField";
 import AppButton from "../AppButton";
-import AnimatedReceipt from "../illustrations/AnimatedReceipt"; // <-- NEW
-import { useEffect, useState } from "react";
+import AnimatedReceipt from "../illustrations/AnimatedReceipt";
+import { useEffect, useState, useRef } from "react";
 
 interface LoginFormProps {
   control: Control<any>;
@@ -34,19 +34,34 @@ export default function LoginForm({
   errors = {},
 }: LoginFormProps) {
   const [isPasswordActive, setIsPasswordActive] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const el = document.querySelector(
-      'input[name="password"]'
-    ) as HTMLInputElement | null;
-    if (!el) return;
-    const onF = () => setIsPasswordActive(true);
-    const onB = () => setIsPasswordActive(false);
-    el.addEventListener("focus", onF);
-    el.addEventListener("blur", onB);
+    // ✅ Better approach: listen to the form and find password field dynamically
+    const handleFocusCapture = (e: FocusEvent) => {
+      const target = e.target as HTMLInputElement;
+      if (target.name === "password") {
+        setIsPasswordActive(true);
+      }
+    };
+
+    const handleBlurCapture = (e: FocusEvent) => {
+      const target = e.target as HTMLInputElement;
+      if (target.name === "password") {
+        setIsPasswordActive(false);
+      }
+    };
+
+    const form = formRef.current;
+    if (!form) return;
+
+    // Use capture phase to ensure we catch focus events
+    form.addEventListener("focusin", handleFocusCapture);
+    form.addEventListener("focusout", handleBlurCapture);
+
     return () => {
-      el.removeEventListener("focus", onF);
-      el.removeEventListener("blur", onB);
+      form.removeEventListener("focusin", handleFocusCapture);
+      form.removeEventListener("focusout", handleBlurCapture);
     };
   }, []);
 
@@ -82,6 +97,7 @@ export default function LoginForm({
             justifyContent: "center",
             bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.50",
             p: { sm: 3, md: 4 },
+            pointerEvents: "auto", // ✅ Ensure pointer events work
           }}
         >
           <AnimatedReceipt isPasswordActive={isPasswordActive} />
@@ -124,6 +140,7 @@ export default function LoginForm({
             )}
 
             <Box
+              ref={formRef}
               component="form"
               onSubmit={handleFormSubmit}
               noValidate

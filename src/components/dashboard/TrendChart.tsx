@@ -83,8 +83,8 @@ const TrendChart = ({ data, currencySymbol }: TrendChartProps) => {
   const xAxisData = validData.map(item => item.month);
   const seriesData = validData.map(item => item.amount);
 
-  // Calculate height based on screen size
-  const chartHeight = isMobile ? 120 : isTablet ? 140 : 160;
+  // ✅ Calculate height based on screen size
+  const chartHeight = isMobile ? 100 : isTablet ? 120 : 140;
 
   // ✅ Calculate max value for better Y-axis scaling
   const maxValue = Math.max(...seriesData);
@@ -100,50 +100,69 @@ const TrendChart = ({ data, currencySymbol }: TrendChartProps) => {
     setOpenModal(false);
   };
 
+  // ✅ Smart number formatter - VERY SHORT
+  const formatYAxis = (value: number) => {
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1)}M`;
+    }
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(0)}k`;
+    }
+    return value.toFixed(0);
+  };
+
+  const formatCurrency = (value: number) => {
+    return `${currencySymbol}${value.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
   // Common chart config
   const getChartConfig = (isModal = false) => {
     const height = isModal ? 400 : chartHeight;
-    const fontSize = isModal ? 12 : (isMobile ? 8 : 10);
     
     return {
       xAxis: [{
         data: xAxisData,
         scaleType: 'band' as const,
         tickLabelStyle: {
-          fontSize: fontSize,
-          angle: isModal ? 0 : (isMobile ? -45 : 0),
+          fontSize: isModal ? 12 : (isMobile ? 8 : 10),
+          angle: 0,  // ✅ NO ANGLE - straight labels
         },
+        tickPlacement: 'middle' as const,
       }],
       yAxis: [{
         min: yAxisMin,
         max: yAxisMax,
         tickLabelStyle: {
-          fontSize: fontSize,
+          fontSize: isModal ? 12 : (isMobile ? 8 : 9),
         },
-        valueFormatter: (value: any) => {
-          if (!isModal && isMobile && value >= 1000) {
-            return `${currencySymbol}${(value / 1000).toFixed(0)}k`;
-          }
-          return `${currencySymbol}${value.toLocaleString()}`;
-        },
+        // ✅ SHORT format WITHOUT currency symbol
+        valueFormatter: isModal 
+          ? (value: any) => `${currencySymbol}${value.toLocaleString()}`
+          : formatYAxis,
       }],
       series: [{
         data: seriesData,
         curve: "natural" as const,
         area: true,
-        showMark: isModal ? true : !isMobile,
+        showMark: isModal,
         valueFormatter: (value: any) => 
           value !== null && value !== undefined
-            ? `${currencySymbol}${value.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}`
+            ? formatCurrency(value)
             : 'N/A',
       }],
       height,
+      // ✅ MINIMAL MARGINS - Main fix!
       margin: isModal 
-        ? { left: 80, right: 40, top: 40, bottom: 60 }
-        : { left: isMobile ? 45 : 55, right: isMobile ? 10 : 20, top: 10, bottom: isMobile ? 35 : 25 },
+        ? { left: 70, right: 40, top: 40, bottom: 60 }
+        : { 
+            left:0,
+            right:0,
+            top: 0, 
+            bottom:0
+          },
     };
   };
 
@@ -159,15 +178,14 @@ const TrendChart = ({ data, currencySymbol }: TrendChartProps) => {
           boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
           cursor: 'pointer',
           position: 'relative',
-          transition: 'transform 0.2s, box-shadow 0.2s',
-          '&:hover': {
-            transform: 'translateY(-4px)',
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.12)",
-          }
         }}
         onClick={handleCardClick}
       >
-        <CardContent sx={{ height: "100%", p: isMobile ? 1.5 : 2 }}>
+        <CardContent sx={{ 
+          height: "100%", 
+          p: { xs: 1.5, sm: 2 },
+          '&:last-child': { pb: { xs: 1.5, sm: 2 } }  // ✅ Remove extra bottom padding
+        }}>
           {/* Zoom Icon */}
           <Box sx={{ 
             position: 'absolute', 
@@ -179,6 +197,7 @@ const TrendChart = ({ data, currencySymbol }: TrendChartProps) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            zIndex: 1,
           }}>
             <ZoomInIcon sx={{ fontSize: 16, color: 'white' }} />
           </Box>
@@ -186,48 +205,52 @@ const TrendChart = ({ data, currencySymbol }: TrendChartProps) => {
           <Typography 
             variant="subtitle2" 
             sx={{ 
-              mb: 1, 
+              mb: 0.5,
               fontWeight: 600,
-              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              fontSize: { xs: '0.7rem', sm: '0.8rem' },
             }}
           >
-            📈 Revenue Trend (Last 12 Months)
+            📈 Revenue Trend
           </Typography>
           
-          <Box sx={{ width: '100%', height: chartHeight }}>
+          <Box sx={{ width: '100%', height: chartHeight, mt: 0.5 }}>
             <LineChart
               {...chartConfig}
               grid={{ horizontal: true, vertical: false }}
               sx={{
                 '& .MuiChartsAxis-tickLabel': {
-                  fontSize: isMobile ? '0.6rem !important' : '0.7rem !important',
+                  fontSize: isMobile ? '8px !important' : '10px !important',
+                  fill: '#666',
+                  fontWeight: 500,
+                },
+                '& .MuiChartsAxis-bottom .MuiChartsAxis-tickLabel': {
+                  transform: 'translateY(5px)',  // ✅ Push labels down slightly
+                },
+                '& .MuiChartsAxis-left .MuiChartsAxis-tickLabel': {
+                  transform: 'translateX(-2px)',  // ✅ Pull Y-axis labels closer
                 },
                 '& .MuiChartsAxis-line': {
                   stroke: '#e0e0e0',
+                  strokeWidth: 1,
                 },
                 '& .MuiChartsGrid-line': {
-                  stroke: '#f0f0f0',
-                  strokeDasharray: '3 3',
+                  stroke: '#f5f5f5',
+                  strokeDasharray: '2 2',
+                  strokeWidth: 0.5,
                 },
                 '& .MuiLineElement-root': {
-                  strokeWidth: 3,
-                  filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.2))',
+                  strokeWidth: 2.5,
+                  filter: 'drop-shadow(0px 2px 3px rgba(0,0,0,0.15))',
                 },
                 '& .MuiAreaElement-root': {
                   fill: 'url(#gradient)',
-                  fillOpacity: 0.3,
-                },
-                '& .MuiMarkElement-root': {
-                  fill: theme.palette.primary.main,
-                  stroke: '#fff',
-                  strokeWidth: 2,
-                  scale: '1.2',
+                  fillOpacity: 0.25,
                 },
               }}
             >
               <defs>
                 <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={theme.palette.primary.main} stopOpacity={0.5} />
+                  <stop offset="0%" stopColor={theme.palette.primary.main} stopOpacity={0.4} />
                   <stop offset="100%" stopColor={theme.palette.primary.main} stopOpacity={0.05} />
                 </linearGradient>
               </defs>
@@ -282,7 +305,7 @@ const TrendChart = ({ data, currencySymbol }: TrendChartProps) => {
             sx={{ 
               mb: 3, 
               fontWeight: 600,
-              pr: 5, // Space for close button
+              pr: 5,
             }}
           >
             📈 Revenue Trend - Last 12 Months
@@ -300,10 +323,7 @@ const TrendChart = ({ data, currencySymbol }: TrendChartProps) => {
                 Total Revenue
               </Typography>
               <Typography variant="h6" fontWeight={600}>
-                {currencySymbol}{seriesData.reduce((a, b) => a + b, 0).toLocaleString('en-US', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {formatCurrency(seriesData.reduce((a, b) => a + b, 0))}
               </Typography>
             </Box>
             <Box>
@@ -311,10 +331,7 @@ const TrendChart = ({ data, currencySymbol }: TrendChartProps) => {
                 Average/Month
               </Typography>
               <Typography variant="h6" fontWeight={600}>
-                {currencySymbol}{(seriesData.reduce((a, b) => a + b, 0) / seriesData.length).toLocaleString('en-US', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {formatCurrency(seriesData.reduce((a, b) => a + b, 0) / seriesData.length)}
               </Typography>
             </Box>
             <Box>
@@ -323,6 +340,14 @@ const TrendChart = ({ data, currencySymbol }: TrendChartProps) => {
               </Typography>
               <Typography variant="h6" fontWeight={600}>
                 {xAxisData[seriesData.indexOf(maxValue)]}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                Peak Amount
+              </Typography>
+              <Typography variant="h6" fontWeight={600} color="primary">
+                {formatCurrency(maxValue)}
               </Typography>
             </Box>
           </Box>
@@ -386,16 +411,14 @@ const TrendChart = ({ data, currencySymbol }: TrendChartProps) => {
                     bgcolor: 'rgba(0,0,0,0.02)',
                     border: '1px solid',
                     borderColor: 'divider',
+                    borderRadius: 1.5,
                   }}
                 >
                   <Typography variant="caption" color="text.secondary">
                     {item.month}
                   </Typography>
                   <Typography variant="body1" fontWeight={600}>
-                    {currencySymbol}{item.amount.toLocaleString('en-US', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatCurrency(item.amount)}
                   </Typography>
                   {item.count !== undefined && (
                     <Typography variant="caption" color="text.secondary">

@@ -437,16 +437,13 @@ useEffect(() => {
                 variant="contained"
                 onClick={handleSubmit(onSubmit)}
                 disabled={!isFormValid}
-                startIcon={
-                  saving ? <CircularProgress size={16} /> : <SaveIcon />
-                }
                 sx={{
                   bgcolor: "black",
                   "&:hover": { bgcolor: "#333" },
                   "&:disabled": { bgcolor: "#e0e0e0", color: "#9e9e9e" },
                 }}
               >
-                {saving ? "Saving..." : "Save"}
+                Save
               </Button>
             </Box>
           )}
@@ -577,9 +574,6 @@ useEffect(() => {
                 variant="contained"
                 onClick={handleSubmit(onSubmit)}
                 disabled={!isFormValid}
-                startIcon={
-                  saving ? <CircularProgress size={16} /> : <SaveIcon />
-                }
                 sx={{
                   bgcolor: "black",
                   "&:hover": { bgcolor: "#333" },
@@ -587,7 +581,7 @@ useEffect(() => {
                   py: 1.5,
                 }}
               >
-                {saving ? "Saving..." : "Save Invoice"}
+                Save
               </Button>
               <Button
                 fullWidth

@@ -8,7 +8,7 @@ export const showToast = (
 ) => {
   enqueueSnackbar(message, {
     variant,
-    autoHideDuration: 3000,
+    autoHideDuration: 1000,
     anchorOrigin: {
       vertical: 'top',
       horizontal: 'right',

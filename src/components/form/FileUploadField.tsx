@@ -77,7 +77,9 @@ const FileUploadField = <T extends FieldValues>({
       if (preview && preview.startsWith("blob:")) {
         URL.revokeObjectURL(preview);
       }
-      setPreview(existingImageUrl && !isExistingImageRemoved ? existingImageUrl : null);
+      setPreview(
+        existingImageUrl && !isExistingImageRemoved ? existingImageUrl : null
+      );
       onChange(null);
     }
   };
@@ -88,16 +90,16 @@ const FileUploadField = <T extends FieldValues>({
     if (preview && preview.startsWith("blob:")) {
       URL.revokeObjectURL(preview);
     }
-    
+
     // Clear preview
     setPreview(null);
-    
+
     // Mark existing image as removed
     setIsExistingImageRemoved(true);
-    
+
     // Set form value to special marker for deletion
     onChange("DELETE_IMAGE"); // ✅ Special marker
-    
+
     // Call parent callback if provided
     if (onImageRemove) {
       onImageRemove();
@@ -115,13 +117,13 @@ const FileUploadField = <T extends FieldValues>({
       name={name}
       control={control}
       render={({ field: { onChange, value }, fieldState: { error } }) => (
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{ mb: 1 }}>
           {/* Label */}
           <Typography
             component="label"
             sx={{
               display: "block",
-              mb: 1.5,
+              mb: 0.5,
               fontWeight: 500,
               fontSize: "0.875rem",
               color: "text.primary",
@@ -135,7 +137,7 @@ const FileUploadField = <T extends FieldValues>({
             sx={{
               border: `2px dashed ${error ? "#ef4444" : "#e0e0e0"}`,
               borderRadius: 2,
-              p: 3,
+              p: 1,
               textAlign: "center",
               backgroundColor: error ? "#fef2f2" : "#fafafa",
               transition: "all 0.2s",
@@ -152,9 +154,9 @@ const FileUploadField = <T extends FieldValues>({
                   src={preview}
                   variant="rounded"
                   sx={{
-                    width: 120,
-                    height: 120,
-                    mb: 2,
+                    width: { xs: 70, sm: 80 },
+                    height: { xs: 70, sm: 80 },
+                    mb: 1.5,
                     boxShadow: 2,
                   }}
                 />
@@ -164,26 +166,28 @@ const FileUploadField = <T extends FieldValues>({
                   onClick={() => handleRemove(onChange)}
                   sx={{
                     position: "absolute",
-                    top: -8,
-                    right: -8,
+                    top: -4,
+                    right: -4,
                     bgcolor: "#ef4444",
                     color: "white",
+                    width: 24,
+                    height: 24,
                     boxShadow: 2,
                     "&:hover": {
                       bgcolor: "#dc2626",
                     },
                   }}
                 >
-                  <CloseIcon fontSize="small" />
+                  <CloseIcon sx={{ fontSize: 16 }} />
                 </IconButton>
               </Box>
             ) : (
               <Box>
                 <AddPhotoAlternateOutlinedIcon
                   sx={{
-                    fontSize: 60,
+                    fontSize: { xs: 36, sm: 40 },
                     color: "text.secondary",
-                    mb: 2,
+                    mb: 1,
                   }}
                 />
               </Box>
@@ -199,14 +203,16 @@ const FileUploadField = <T extends FieldValues>({
                   backgroundColor: "#171717",
                   color: "white",
                   textTransform: "none",
-                  px: 3,
-                  py: 1,
+                  px: 1.5,
+                  py: 0.5,
                   "&:hover": {
                     backgroundColor: "#333",
                   },
                 }}
               >
-                {preview && value !== "DELETE_IMAGE" ? "Change Image" : "Choose Image"}
+                {preview && value !== "DELETE_IMAGE"
+                  ? "Change Image"
+                  : "Choose Image"}
                 <input
                   type="file"
                   hidden
@@ -224,7 +230,7 @@ const FileUploadField = <T extends FieldValues>({
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ display: "block", mt: 1.5 }}
+                sx={{ display: "block", mt: 0.5,fontSize:"0.7rem" }}
               >
                 {isFile(value)
                   ? `Selected: ${value.name}`
@@ -239,7 +245,7 @@ const FileUploadField = <T extends FieldValues>({
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ display: "block", mt: 0.5 }}
+                sx={{ display: "block", mt: 0.25,fontSize:"0.65rem" }}
               >
                 Supported: JPG, PNG
               </Typography>

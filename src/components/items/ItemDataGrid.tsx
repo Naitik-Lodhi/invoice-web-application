@@ -130,6 +130,8 @@ const ItemDataGrid = ({
                 height: isMobile ? 32 : 50,
                 bgcolor: pictureUrl ? "transparent" : "primary.light",
                 opacity: isLoading ? 0.5 : 1,
+                mt:1,
+                mb:1
               }}
             >
               {!pictureUrl && initials}
@@ -152,6 +154,7 @@ const ItemDataGrid = ({
                     fontSize: "0.75rem",
                     color: "#171717",
                     lineHeight: 1.2,
+                    mt:3
                   }}
                 >
                   {params.row.itemName}
@@ -164,6 +167,7 @@ const ItemDataGrid = ({
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
                     maxWidth: "100%",
+                    mt:2
                   }}
                 >
                   {truncateText(params.row.description || "", 30)}
@@ -178,6 +182,8 @@ const ItemDataGrid = ({
                 fontWeight: 700,
                 color: "#171717",
                 fontSize: isTablet ? "0.8rem" : "0.875rem",
+                textAlign:"left",
+                mt:2.5
               }}
             >
               {params.row.itemName}
@@ -211,6 +217,7 @@ const ItemDataGrid = ({
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
                   cursor: description.length > maxLength ? "help" : "default",
+                  mt:2.5
                 }}
               >
                 {truncateText(description, maxLength)}
@@ -232,6 +239,7 @@ const ItemDataGrid = ({
               fontWeight: 600,
               fontSize: isTablet ? "0.8rem" : "0.875rem",
               color: "#171717",
+              mt:2.5
             }}
           >
             {formatCurrency(params.row.salesRate)}
@@ -257,6 +265,7 @@ const ItemDataGrid = ({
                 fontSize: isTablet ? "0.8rem" : "0.875rem",
                 color: discount > 0 ? "#059669" : "#666",
                 fontWeight: discount > 0 ? 600 : 400,
+                mt:2.5
               }}
             >
               {displayValue}%
@@ -341,13 +350,16 @@ const ItemDataGrid = ({
         getRowId={(row) => row.itemID}
         paginationModel={paginationModel}
         onPaginationModelChange={setPaginationModel}
-        pageSizeOptions={isMobile ? [5, 10, 25] : [10, 25, 50, 100]}
+        // pageSizeOptions={isMobile ? [5, 10, 25] : [10, 25, 50, 100]}
         disableRowSelectionOnClick
         autoHeight={false}
         density={isMobile ? "compact" : "comfortable"}
         rowHeight={isMobile ? 60 : 62}
         disableColumnMenu
         disableColumnSelector
+        sx={{
+          textAlign:"center"
+        }}
       />
     </Box>
   );

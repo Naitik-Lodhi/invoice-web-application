@@ -1,7 +1,6 @@
 // src/components/layout/AppSidebar.tsx
-import { Box, Drawer, Divider, Toolbar } from "@mui/material";
+import { Box, Drawer, Toolbar } from "@mui/material";
 import NavLinks from "./layout/NavLinks";
-import UserProfile from "./layout/UserProfile";
 
 interface AppSidebarProps {
   isOpen: boolean;
@@ -49,10 +48,6 @@ const AppSidebar = ({
         
         <Box sx={{ flexGrow: 1, overflow: "auto" }}>
           <NavLinks onClose={onClose} isMobile={isMobile} />
-        </Box>
-        <Divider />
-        <Box sx={{ flexShrink: 0 }}>
-          <UserProfile />
         </Box>
       </Box>
     </Drawer>
