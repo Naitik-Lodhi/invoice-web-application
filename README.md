@@ -73,9 +73,9 @@ Backend API is configurable via `VITE_API_BASE_URL`. JWT is attached via Axios i
 ## 🖼️ Screenshots (placeholders)
 
 ```md
-![Login](public/screenshot-login.png)
-![Dashboard](public/screenshot-dashboard.png)
-![Invoices](public/screenshot-invoices.png)
+Login (public/screenshot-login.png)
+Dashboard (public/screenshot-dashboard.png)
+Invoices(public/screenshot-invoices.png)
 ```
 
 ---
