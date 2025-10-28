@@ -20,11 +20,11 @@ const InvoiceDetailsSection = ({
 }: InvoiceDetailsSectionProps) => {
   return (
     <Card sx={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-      <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+      <CardContent sx={{ p: { xs: 2, sm: 1 } }}>
         <Typography
           variant="h6"
           sx={{
-            mb: 3,
+            mb: 1,
             fontWeight: 600,
             fontSize: { xs: '1rem', sm: '1.125rem' },
           }}
@@ -32,7 +32,7 @@ const InvoiceDetailsSection = ({
           Invoice Details
         </Typography>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={1}>
           {/* Row 1: Invoice No & Invoice Date */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormField
@@ -52,7 +52,7 @@ const InvoiceDetailsSection = ({
                 control={control}
                 rules={{ required: 'Pick a date.' }}
                 render={({ field, fieldState: { error } }) => (
-                  <Box sx={{ width: '100%', mb: 2.5 }}>
+                  <Box sx={{ width: '100%', mb:1 }}>
                     <Typography
                       component="label"
                       sx={{ display: 'block', mb: 1, fontWeight: '500' }}
@@ -117,7 +117,6 @@ const InvoiceDetailsSection = ({
               control={control}
               label="Address"
               placeholder="Enter address"
-              rows={3}
               maxLength={500}
             />
           </Grid>
@@ -128,7 +127,6 @@ const InvoiceDetailsSection = ({
               control={control}
               label="Notes"
               placeholder="Enter notes"
-              rows={3}
               maxLength={500}
             />
           </Grid>

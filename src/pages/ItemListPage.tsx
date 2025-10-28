@@ -203,7 +203,7 @@ const handleSaveItem = async (data: ItemFormData) => {
       console.log("📤 Updating item ID:", itemID);
       response = await itemService.update(itemID, {
         ...itemData,
-        updatedOnPrev: editingItem?.updatedOn || null,
+        updatedOn: editingItem?.updatedOn || null,
       });
       console.log("✅ Item updated");
     }

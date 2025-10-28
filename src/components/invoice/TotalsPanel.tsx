@@ -41,11 +41,11 @@ const TotalsPanel = ({
   };
 
   return (
-    <Card sx={{ boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-      <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+    <Card>
+      <CardContent>
         <Grid container spacing={3}>
           {/* Left side: Label */}
-          <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid>
             <Typography
               variant="h6"
               sx={{
@@ -61,16 +61,10 @@ const TotalsPanel = ({
           </Grid>
 
           {/* Right side: Calculations */}
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Grid>
+            <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
               {/* Sub Total */}
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
+              <Box>
                 <Typography sx={{ fontWeight: 500, color: "#666" }}>
                   Sub Total:
                 </Typography>
@@ -264,39 +258,21 @@ const TotalsPanel = ({
                   my: 1,
                 }}
               />
-
-              {/* Invoice Amount - Highlighted */}
-              <Box
+              <Typography
                 sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  backgroundColor: "#f0f7ff",
-                  border: "2px solid #bbdefb",
-                  borderRadius: "8px",
-                  p: 2,
+                  color: "#1976d2",
                 }}
               >
-                <Typography
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: { xs: "1rem", sm: "1.125rem" },
-                    color: "#1976d2",
-                  }}
-                >
-                  Invoice Amount:
-                </Typography>
-                <Typography
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: { xs: "1.5rem", sm: "1.75rem" },
-                    color: "#1976d2",
-                    textAlign: "right",
-                  }}
-                >
-                  {formatCurrency(invoiceAmount)}
-                </Typography>
-              </Box>
+                Invoice Amount:
+              </Typography>
+              <Typography
+                sx={{
+                  color: "#1976d2",
+                  textAlign: "right",
+                }}
+              >
+                {formatCurrency(invoiceAmount)}
+              </Typography>
             </Box>
           </Grid>
         </Grid>

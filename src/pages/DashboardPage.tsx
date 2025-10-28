@@ -90,9 +90,11 @@ const getDateRange = (
       to = today.endOf("year").format("YYYY-MM-DD");
       break;
     case "Custom":
-      if (customRange?.start && customRange?.end) {
+      if (customRange?.start) {
         from = customRange.start.format("YYYY-MM-DD");
-        to = customRange.end.format("YYYY-MM-DD");
+        to = customRange.end
+          ? customRange.end.format("YYYY-MM-DD")
+          : today.format("YYYY-MM-DD");
       }
       break;
   }
@@ -264,7 +266,19 @@ const DashboardPage = () => {
         if (isNaN(invoiceIdNumber)) {
           throw new Error(`Invalid invoice ID: ${editingInvoiceId}`);
         }
+
+        console.log("📝 Calling update with:", {
+          invoiceId: invoiceIdNumber,
+          updatedOnPrev: data.updatedOn,
+        });
+
         response = await invoiceService.update(invoiceIdNumber, data as any);
+
+        console.log("✅ Update response received:", {
+          invoiceID: response.invoiceID,
+          primaryKeyID: response.primaryKeyID,
+          updatedOn: response.updatedOn,
+        });
       } else if (editorMode === "new") {
         response = await invoiceService.create(data as any);
       } else {
@@ -282,24 +296,32 @@ const DashboardPage = () => {
       await fetchTrendData();
       handleCloseEditor();
 
-      return {
-        invoiceID: String(response.invoiceID ?? ""),
-        updatedOn: response.updatedOn ?? new Date().toISOString(),
+      // ✅ Return standardized format
+      const result = {
+        invoiceID: String(
+          response.invoiceID ||
+            response.primaryKeyID ||
+            response.InvoiceID ||
+            ""
+        ),
+        updatedOn: response.updatedOn || new Date().toISOString(),
       };
-    } catch (error: any) {
-      console.error("Save error:", error);
 
-      if (
-        error.response?.status === 400 &&
-        error.response?.data?.includes("Duplicate Invoice")
-      ) {
-        throw new Error(
-          "Invoice number already exists. The system tried to create a new invoice instead of updating."
-        );
-      } else if (error.response?.status === 409) {
-        throw new Error(
-          "Invoice number already exists. Please use a different number."
-        );
+      console.log("✅ Returning to InvoiceEditor:", result);
+
+      return result;
+    } catch (error: any) {
+      console.error("❌ Save error:", error);
+      console.error("   Response data:", error.response?.data);
+      console.error("   Status:", error.response?.status);
+
+      if (error.response?.status === 409) {
+        // ✅ Show backend's actual error message
+        const errorMessage =
+          error.response?.data?.error ||
+          error.response?.data ||
+          "Invoice was modified by another user";
+        throw new Error(errorMessage);
       } else if (error.response?.status === 412) {
         throw new Error(
           "Invoice was modified by another user. Please reload and try again."
@@ -309,7 +331,6 @@ const DashboardPage = () => {
       throw new Error(error.response?.data?.error || "Failed to save invoice");
     }
   };
-
   const handleCloseEditor = () => {
     setEditorOpen(false);
     setEditorMode("new");
@@ -410,7 +431,11 @@ const DashboardPage = () => {
       const { from, to } = getDateRange(currentFilter, customDateRange);
 
       console.log("🔄 Fetching filtered data...", {
-        filter: currentFilter,
+        currentFilter, // ✅ Should be "Custom"
+        customDateRange: {
+          start: customDateRange.start?.format("YYYY-MM-DD"),
+          end: customDateRange.end?.format("YYYY-MM-DD"),
+        },
         from,
         to,
       });

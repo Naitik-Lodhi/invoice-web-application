@@ -37,7 +37,7 @@ const FormField = <T extends FieldValues>({
       control={control}
       rules={rules}
       render={({ field, fieldState: { error } }) => (
-        <Box sx={{ width: "100%", mb: 2.5 }}>
+        <Box sx={{ width: "100%", mb: 1 }}>
           {" "}
           {/* Added more margin-bottom */}
           <Typography

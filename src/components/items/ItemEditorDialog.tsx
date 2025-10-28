@@ -79,7 +79,7 @@ const ItemEditorDialog = ({
             description: itemData.description || "",
             saleRate: itemData.salesRate || 0,
             discountPct: itemData.discountPct || 0,
-            updatedOnPrev: itemData.updatedOn,
+            updatedOn: itemData.updatedOn,
           });
 
           setDataLoaded(true);
@@ -143,7 +143,7 @@ const ItemEditorDialog = ({
     try {
       await onSave({
         ...data,
-        updatedOnPrev: itemData?.updatedOn || null,
+        updatedOn: itemData?.updatedOn || null,
         imageRemoved,
       });
       // ✅ handleClose will be called by parent after successful save
@@ -267,14 +267,10 @@ const ItemEditorDialog = ({
                   required
                   rules={{
                     required: "Sale rate is required",
-                    min: {
-                      value: 0,
-                      message: "Sale rate must be 0 or greater",
-                    },
-                    validate: (value: any) => {
+                    validate: (value: number) => {
                       const num = Number(value);
                       if (isNaN(num)) return "Please enter a valid number";
-                      if (num < 0) return "Sale rate must be 0 or greater";
+                      if (num < 0) return "Sale rate must be greater than 0";
                       return true;
                     },
                   }}

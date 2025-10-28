@@ -14,7 +14,6 @@ import {
   CircularProgress,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import SaveIcon from "@mui/icons-material/Save";
 import { useForm } from "react-hook-form";
 import InvoiceDetailsSection from "./InvoiceDetailsSection";
 import LineItemsGrid from "./LineItemsGrid";
@@ -42,10 +41,10 @@ export interface InvoiceFormData {
   customerName: string;
   city: string;
   address: string;
+  taxPercent: number;
   notes: string;
   lineItems: LineItem[];
   subTotal: number;
-  taxPercent: number;
   taxAmount: number;
   invoiceAmount: number;
   updatedOn?: string;
@@ -64,7 +63,7 @@ export interface InvoicePayload {
   taxPercent: number;
   taxAmount: number;
   invoiceAmount: number;
-  updatedOnPrev: string | null;
+  updatedOn: string | null;
 }
 
 export interface InvoiceEditorProps {
@@ -96,6 +95,9 @@ const InvoiceEditor = ({
   const [availableItems, setAvailableItems] = useState<any[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // ✅ NEW: State to track current updatedOn
+  const [currentUpdatedOn, setCurrentUpdatedOn] = useState<string | null>(null);
+
   // Default values function
   const getDefaultValues = (): InvoiceFormData => ({
     invoiceNo: "",
@@ -109,7 +111,6 @@ const InvoiceEditor = ({
     taxPercent: 0,
     taxAmount: 0,
     invoiceAmount: 0,
-    updatedOn: undefined,
   });
 
   // Form control
@@ -135,34 +136,33 @@ const InvoiceEditor = ({
     }
   }, [watch, mode, invoiceId]);
 
-  // Load available items - USE FULL LIST
-useEffect(() => {
-  const fetchItems = async () => {
-    try {
-      // ✅ Use getList() instead of getLookupList() to get full item details
-      const items = await itemService.getList();
-      console.log("📦 Full items from backend:", items);
-      
-      const transformed = items.map((item) => ({
-        id: String(item.itemID),
-        name: item.itemName,
-        description: item.description || "",
-        rate: item.salesRate || 0,  // ✅ Now this should have value
-        discountPct: item.discountPct || 0,  // ✅ Now this should have value
-      }));
-      
-      console.log("🔄 Transformed items with rates:", transformed);
-      setAvailableItems(transformed);
-    } catch (error) {
-      console.error("Failed to load items:", error);
-      toast.error("Failed to load items");
-    }
-  };
+  // Load available items
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const items = await itemService.getList();
+        console.log("📦 Full items from backend:", items);
 
-  if (open) {
-    fetchItems();
-  }
-}, [open]);
+        const transformed = items.map((item) => ({
+          id: String(item.itemID),
+          name: item.itemName,
+          description: item.description || "",
+          rate: item.salesRate || 0,
+          discountPct: item.discountPct || 0,
+        }));
+
+        console.log("🔄 Transformed items with rates:", transformed);
+        setAvailableItems(transformed);
+      } catch (error) {
+        console.error("Failed to load items:", error);
+        toast.error("Failed to load items");
+      }
+    };
+
+    if (open) {
+      fetchItems();
+    }
+  }, [open]);
 
   // Load invoice for editing
   const getInvoiceById = useCallback(async () => {
@@ -170,6 +170,19 @@ useEffect(() => {
 
     try {
       const response = await invoiceService.getById(invoiceId as any);
+      console.log("📦 FULL GET Response:", response);
+      console.log("📦 All fields in response:", Object.keys(response));
+      console.log("📦 updatedOn value:", response.updatedOn);
+      console.log("📦 UpdatedOn value:", response.updatedOn); // Capital U?
+      console.log("📦 updatedon value:", response.updatedOn); // lowercase?
+      console.log("📦 updatedOnPrev value:", response.updatedOn);
+
+      // ✅ IMPORTANT: Store updatedOn for concurrency control
+      console.log("📄 Invoice loaded:", {
+        invoiceID: response.invoiceID,
+        updatedOn: response.updatedOn,
+      });
+      setCurrentUpdatedOn(response.updatedOn || null);
 
       // Map line items with proper item names
       const items: LineItem[] = (response.lines || []).map((li, idx) => {
@@ -197,7 +210,7 @@ useEffect(() => {
         };
       });
 
-      // ✅ FIX: Date handling - preserve original date without timezone shift
+      // Date handling - preserve original date
       const invoiceDate = response.invoiceDate
         ? dayjs(response.invoiceDate).toDate()
         : new Date();
@@ -214,11 +227,10 @@ useEffect(() => {
         taxPercent: Number(response.taxPercentage || 0),
         taxAmount: Number(response.taxAmount || 0),
         invoiceAmount: Number(response.invoiceAmount || 0),
-        updatedOn: response.updatedOn || undefined,
       });
 
       setLineItems(items);
-      setHasChanges(false); // Reset changes flag after loading
+      setHasChanges(false);
     } catch (err) {
       console.error("Failed to load invoice:", err);
       toast.error("Failed to load invoice");
@@ -238,11 +250,11 @@ useEffect(() => {
       reset(getDefaultValues());
       setLineItems([
         {
-          id: String(Date.now()), // ✅ Unique ID
+          id: String(Date.now()),
           itemId: "",
           itemName: "",
           description: "",
-          quantity: 1, // ✅ Default quantity 1
+          quantity: 1,
           rate: 0,
           discountPct: 0,
           amount: 0,
@@ -250,6 +262,7 @@ useEffect(() => {
       ]);
       setValue("invoiceNo", String(nextInvoiceNumber));
       setHasChanges(false);
+      setCurrentUpdatedOn(null); // ✅ Clear updatedOn for new invoice
     }
   }, [open, mode, nextInvoiceNumber, reset, setValue]);
 
@@ -259,7 +272,6 @@ useEffect(() => {
   const invoiceDate = watch("invoiceDate");
   const taxPercent = watch("taxPercent") || 0;
   const taxAmount = watch("taxAmount") || 0;
-  const currentUpdatedOn = watch("updatedOn");
 
   // Calculate totals
   const subTotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
@@ -339,10 +351,9 @@ useEffect(() => {
     setConcurrencyError(false);
 
     try {
-      // ✅ FIX: Ensure date is in YYYY-MM-DD format without timezone shift
       const formattedDate = dayjs(data.invoiceDate).format("YYYY-MM-DD");
 
-      const payload = {
+      const payload: InvoicePayload = {
         invoiceNo: data.invoiceNo,
         invoiceDate: formattedDate,
         customerName: data.customerName,
@@ -354,20 +365,57 @@ useEffect(() => {
         taxPercent,
         taxAmount,
         invoiceAmount,
-        updatedOnPrev: currentUpdatedOn || null,
+        updatedOn: mode === "edit" ? currentUpdatedOn : null,
       };
 
-      await onSave(payload);
+      console.log("💾 Submitting payload:", {
+        mode,
+        invoiceId,
+        currentUpdatedOn,
+        updatedOnPrev: payload.updatedOn,
+      });
 
-      reset(getDefaultValues());
-      setLineItems([]);
-      onClose();
+      const result = await onSave(payload);
+
+      console.log("✅ Save completed, result:", result);
+
+      // ✅ CRITICAL: Update state with new updatedOn
+      if (result?.updatedOn) {
+        console.log("🔄 Updating updatedOn:", {
+          old: currentUpdatedOn,
+          new: result.updatedOn,
+        });
+        setCurrentUpdatedOn(result.updatedOn);
+        setHasChanges(false);
+
+        if (mode === "edit") {
+          toast.success("Invoice updated successfully");
+        }
+      } else {
+        console.warn("⚠️ No updatedOn in result:", result);
+      }
+
+      // Close editor for new invoices
+      if (mode === "new") {
+        reset(getDefaultValues());
+        setLineItems([]);
+        setCurrentUpdatedOn(null);
+        onClose();
+      }
     } catch (error: any) {
-      console.error("Save error:", error);
+      console.error("❌ Save failed:", error);
+
       if (error.response?.status === 409 || error.response?.status === 412) {
         setConcurrencyError(true);
-        toast.error("This record was modified by someone else. Please reload.");
-        getInvoiceById();
+        toast.error(
+          error.message || "This record was modified by someone else"
+        );
+        // Reload invoice to get latest data
+        if (mode === "edit") {
+          await getInvoiceById();
+        }
+      } else {
+        toast.error(error.message || "Failed to save invoice");
       }
     } finally {
       setSaving(false);
@@ -380,6 +428,7 @@ useEffect(() => {
     setLineItems([]);
     setHasChanges(false);
     setConcurrencyError(false);
+    setCurrentUpdatedOn(null); // ✅ Clear updatedOn on close
     onClose();
   };
 
@@ -450,17 +499,15 @@ useEffect(() => {
         </Toolbar>
       </AppBar>
 
-      <DialogContent
-        sx={{ p: { xs: 2, sm: 3, md: 4 }, backgroundColor: "#fafafa" }}
-      >
-        <Box sx={{ maxWidth: 1400, mx: "auto" }}>
+      <DialogContent sx={{ backgroundColor: "#fafafa" }}>
+        <Box sx={{ maxWidth: 1400 }}>
           <InvoiceDetailsSection
             control={control}
             errors={errors}
             isMobile={isMobile}
           />
 
-          <Box sx={{ mt: 4 }}>
+          <Box >
             <LineItemsGrid
               lineItems={lineItems}
               setLineItems={setLineItems}
@@ -470,7 +517,7 @@ useEffect(() => {
             />
           </Box>
 
-          <Box sx={{ mt: 4 }}>
+          <Box>
             <TotalsPanel
               subTotal={subTotal}
               taxPercent={taxPercent}
@@ -581,7 +628,7 @@ useEffect(() => {
                   py: 1.5,
                 }}
               >
-                Save
+                {saving ? <CircularProgress size={20} /> : "Save"}
               </Button>
               <Button
                 fullWidth

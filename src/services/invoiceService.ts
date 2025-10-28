@@ -30,6 +30,7 @@ export interface InvoiceFormData {
     discountPct: number;
     amount: number;
   }>;
+  updatedOn?: string;
 }
 
 export interface Invoice {
@@ -88,7 +89,7 @@ export interface InvoiceDetail {
     discountPct: number;
     amount?: number;
   }>;
-  updatedOn?: string;
+  updatedOn?: string | null;
 }
 
 // ✅ NEW: Item interface
@@ -280,7 +281,6 @@ export const invoiceService = {
     return response.data;
   },
 
-  // Existing: Update invoice
   update: async (
     invoiceId: number,
     data: InvoiceFormData
@@ -294,7 +294,7 @@ export const invoiceService = {
 
     const payload = {
       invoiceID: numericInvoiceId,
-      invoiceNo: data.invoiceNo ? parseInt(data.invoiceNo) : null,
+      invoiceNo: data.invoiceNo ? parseInt(data.invoiceNo as string) : null,
       invoiceDate: data.invoiceDate,
       customerName: data.customerName.trim(),
       address: data.address || "",
@@ -309,14 +309,38 @@ export const invoiceService = {
         rate: item.rate,
         discountPct: item.discountPct,
       })),
-      updatedOnPrev: (data as any).updatedOnPrev || null,
+      updatedOn: data.updatedOn || null,
     };
+
+    console.log("📤 UPDATE API REQUEST:", {
+      invoiceID: payload.invoiceID,
+      updatedOn: payload.updatedOn,
+    });
 
     const response = await axiosInstance.put(
       API_ENDPOINTS.invoices.UPDATE,
       payload
     );
-    return response.data;
+
+    console.log("📥 UPDATE API RESPONSE (Raw):", response.data);
+
+    // ✅ IMPORTANT: Transform backend response to expected format
+    const transformedResponse = {
+      invoiceID: response.data.primaryKeyID || numericInvoiceId,
+      updatedOn: response.data.updatedOn,
+      // Include other fields that might be needed
+      ...response.data,
+    };
+
+    console.log("✅ UPDATE API RESPONSE (Transformed):", transformedResponse);
+
+    // ✅ Validate updatedOn exists
+    if (!transformedResponse.updatedOn) {
+      console.error("❌ Backend did not return updatedOn!");
+      throw new Error("Backend error: Missing updatedOn in response");
+    }
+
+    return transformedResponse as Invoice;
   },
 
   // Existing: Delete invoice

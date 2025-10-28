@@ -71,10 +71,12 @@ const getDateRange = (
       from = today.startOf("year").format("YYYY-MM-DD");
       to = today.endOf("year").format("YYYY-MM-DD");
       break;
-    case "Custom":
-      if (customRange?.start && customRange?.end) {
+     case "Custom":
+      if (customRange?.start) { 
         from = customRange.start.format("YYYY-MM-DD");
-        to = customRange.end.format("YYYY-MM-DD");
+        to = customRange.end 
+          ? customRange.end.format("YYYY-MM-DD")
+          : today.format("YYYY-MM-DD");
       }
       break;
   }
@@ -190,7 +192,7 @@ const InvoicesPage = () => {
         if (isNaN(invoiceIdNumber)) {
           throw new Error(`Invalid invoice ID: ${editingInvoiceId}`);
         }
-        response = await invoiceService.update(invoiceIdNumber, data as any);
+        response = await invoiceService.update(invoiceIdNumber, data);
       } else if (editorMode === "new") {
         response = await invoiceService.create(data as any);
       } else {

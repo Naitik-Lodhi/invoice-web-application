@@ -7,7 +7,7 @@ export interface ItemFormData {
   description?: string;
   saleRate: number;
   discountPct?: number;
-  updatedOnPrev?: string | null;
+  updatedOn?: string | null;
 }
 
 export interface Item {
@@ -82,7 +82,7 @@ create: async (data: ItemFormData): Promise<Item> => {
       description: data.description?.trim() || '',
       salesRate: data.saleRate,
       discountPct: data.discountPct || 0,
-      updatedOnPrev: data.updatedOnPrev || null,
+      updatedOn: data.updatedOn || null,
     };
     const response = await axiosInstance.put(API_ENDPOINTS.items.UPDATE, payload);
     return response.data;

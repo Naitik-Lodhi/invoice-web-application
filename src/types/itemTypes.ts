@@ -19,7 +19,7 @@ export interface ItemFormData {
   description: string;
   saleRate: number;
   discountPct: number;
-  updatedOnPrev?: string | null; 
+  updatedOn?: string | null; 
    imageRemoved?: boolean; 
 }
 

@@ -22,6 +22,8 @@ import MenuIcon from "@mui/icons-material/Menu";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useAuth } from "../../context/AuthContext";
 import type { Dayjs } from "dayjs";
+import ClearIcon from "@mui/icons-material/Clear";
+import dayjs from "dayjs";
 
 interface DashboardHeaderProps {
   onMenuClick: () => void;
@@ -62,8 +64,21 @@ const DashboardHeader = ({
   };
 
   const handleCustomDateApply = () => {
-    if (tempDateRange.start && tempDateRange.end) {
-      onCustomDateChange(tempDateRange.start, tempDateRange.end);
+    if (tempDateRange.start) {
+      // ✅ If no end date, use today
+      const endDate = tempDateRange.end || dayjs();
+
+      // ✅ IMPORTANT: First set filter to "Custom"
+      onFilterChange("Custom");
+
+      // ✅ Then set the date range
+      onCustomDateChange(tempDateRange.start, endDate);
+
+      console.log("📅 Custom date applied:", {
+        start: tempDateRange.start.format("YYYY-MM-DD"),
+        end: endDate.format("YYYY-MM-DD"),
+      });
+
       handleCustomDateClose();
     }
   };
@@ -146,7 +161,7 @@ const DashboardHeader = ({
               }}
             />
             <DatePicker
-              label="End Date"
+              label="End Date (Optional)"
               value={tempDateRange.end}
               onChange={(newValue) =>
                 setTempDateRange((prev) => ({ ...prev, end: newValue }))
@@ -156,25 +171,56 @@ const DashboardHeader = ({
                 textField: {
                   size: "small",
                   fullWidth: true,
+                  helperText: "Leave empty to fetch till today",
                 },
               }}
             />
-            <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-              <Button size="small" onClick={handleCustomDateClose}>
-                Cancel
-              </Button>
+            <Box
+              sx={{
+                display: "flex",
+                gap: 1,
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              {/* ✅ Clear Button with Icon */}
               <Button
                 size="small"
-                variant="contained"
-                onClick={handleCustomDateApply}
-                disabled={!tempDateRange.start || !tempDateRange.end}
+                startIcon={<ClearIcon />} // ✅ Add import: import ClearIcon from '@mui/icons-material/Clear';
+                onClick={() => setTempDateRange({ start: null, end: null })}
+                disabled={!tempDateRange.start && !tempDateRange.end}
                 sx={{
-                  bgcolor: "black",
-                  "&:hover": { bgcolor: "#333" },
+                  color: "#ef4444",
+                  "&:hover": {
+                    bgcolor: "rgba(239, 68, 68, 0.1)",
+                  },
                 }}
               >
-                Apply
+                Clear
               </Button>
+
+              {/* Cancel & Apply */}
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Button
+                  size="small"
+                  onClick={handleCustomDateClose}
+                  variant="outlined"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={handleCustomDateApply}
+                  disabled={!tempDateRange.start}
+                  sx={{
+                    bgcolor: "black",
+                    "&:hover": { bgcolor: "#333" },
+                  }}
+                >
+                  Apply
+                </Button>
+              </Box>
             </Box>
           </Stack>
         </Box>
@@ -312,9 +358,9 @@ const DashboardHeader = ({
               >
                 {showInitials && (user.firstName?.charAt(0) || "U")}
               </Avatar>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              {/* <Typography variant="body2" sx={{ fontWeight: 500 }}>
                 {user.firstName}
-              </Typography>
+              </Typography> */}
             </Box>
           )}
         </Toolbar>
