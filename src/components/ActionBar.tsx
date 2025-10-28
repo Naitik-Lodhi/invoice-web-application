@@ -32,6 +32,7 @@ import ClearIcon from "@mui/icons-material/Clear";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import LockIcon from "@mui/icons-material/Lock"; // ✅ ADD THIS
 
 export interface Column {
   field: string;
@@ -75,6 +76,11 @@ const ActionBar = ({
   );
   const [mobileColumnDrawer, setMobileColumnDrawer] = useState(false);
 
+  // ✅ Helper function to check if column is locked
+  const isColumnLocked = (field: string) => {
+    return field === "actions";
+  };
+
   // Desktop Menu handlers
   const handleColumnMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     if (isMobile) {
@@ -93,6 +99,9 @@ const ActionBar = ({
   };
 
   const handleColumnToggle = (field: string) => {
+    // ✅ Prevent toggling locked columns
+    if (isColumnLocked(field)) return;
+
     const column = columns.find((col) => col.field === field);
     if (column) {
       onColumnVisibilityChange(field, !column.visible);
@@ -104,11 +113,21 @@ const ActionBar = ({
   };
 
   const handleShowAll = () => {
-    columns.forEach((col) => onColumnVisibilityChange(col.field, true));
+    // ✅ Only toggle non-locked columns
+    columns.forEach((col) => {
+      if (!isColumnLocked(col.field)) {
+        onColumnVisibilityChange(col.field, true);
+      }
+    });
   };
 
   const handleHideAll = () => {
-    columns.forEach((col) => onColumnVisibilityChange(col.field, false));
+    // ✅ Only toggle non-locked columns
+    columns.forEach((col) => {
+      if (!isColumnLocked(col.field)) {
+        onColumnVisibilityChange(col.field, false);
+      }
+    });
   };
 
   // Mobile Drawer for Column Selection
@@ -142,26 +161,41 @@ const ActionBar = ({
 
       {/* Column List */}
       <List sx={{ pb: 2 }}>
-        {columns.map((column) => (
-          <ListItem key={column.field} disablePadding>
-            <ListItemButton onClick={() => handleColumnToggle(column.field)}>
-              <ListItemIcon sx={{ minWidth: 40 }}>
-                {column.visible ? (
-                  <CheckBoxIcon sx={{ color: "#000" }} />
-                ) : (
-                  <CheckBoxOutlineBlankIcon sx={{ color: "#666" }} />
+        {columns.map((column) => {
+          const isLocked = isColumnLocked(column.field);
+          
+          return (
+            <ListItem key={column.field} disablePadding>
+              <ListItemButton 
+                onClick={() => handleColumnToggle(column.field)}
+                disabled={isLocked} // ✅ Disable locked columns
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>
+                  {isLocked ? (
+                    <LockIcon sx={{ color: "#999", fontSize: "1.2rem" }} />
+                  ) : column.visible ? (
+                    <CheckBoxIcon sx={{ color: "#000" }} />
+                  ) : (
+                    <CheckBoxOutlineBlankIcon sx={{ color: "#666" }} />
+                  )}
+                </ListItemIcon>
+                <ListItemText
+                  primary={column.headerName}
+                  primaryTypographyProps={{
+                    fontSize: "0.9rem",
+                    fontWeight: column.visible ? 600 : 400,
+                    color: isLocked ? "#999" : "inherit", // ✅ Grayed out
+                  }}
+                />
+                {isLocked && (
+                  <Typography variant="caption" sx={{ color: "#999", ml: 1 }}>
+                    Always visible
+                  </Typography>
                 )}
-              </ListItemIcon>
-              <ListItemText
-                primary={column.headerName}
-                primaryTypographyProps={{
-                  fontSize: "0.9rem",
-                  fontWeight: column.visible ? 600 : 400,
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
       </List>
 
       {/* Action Buttons */}
@@ -214,36 +248,67 @@ const ActionBar = ({
       </Box>
       <Divider />
       <Box sx={{ maxHeight: 300, overflow: "auto" }}>
-        {columns.map((column) => (
-          <MenuItem
-            key={column.field}
-            onClick={() => handleColumnToggle(column.field)}
-            sx={{ py: 0.5 }}
-          >
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={column.visible}
-                  size="small"
-                  sx={{
-                    color: "#666",
-                    "&.Mui-checked": {
-                      color: "#000",
-                    },
-                  }}
-                />
-              }
-              label={column.headerName}
-              sx={{
-                width: "100%",
-                m: 0,
-                "& .MuiFormControlLabel-label": {
-                  fontSize: "0.875rem",
-                },
+        {columns.map((column) => {
+          const isLocked = isColumnLocked(column.field);
+          
+          return (
+            <MenuItem
+              key={column.field}
+              onClick={() => handleColumnToggle(column.field)}
+              sx={{ 
+                py: 0.5,
+                cursor: isLocked ? "not-allowed" : "pointer", // ✅ Change cursor
+                opacity: isLocked ? 0.6 : 1, // ✅ Visual feedback
               }}
-            />
-          </MenuItem>
-        ))}
+              disabled={isLocked} // ✅ Disable menu item
+            >
+              <FormControlLabel
+                control={
+                  isLocked ? (
+                    <LockIcon sx={{ color: "#999", fontSize: "1.2rem", ml: 0.5, mr: 1 }} />
+                  ) : (
+                    <Checkbox
+                      checked={column.visible}
+                      size="small"
+                      sx={{
+                        color: "#666",
+                        "&.Mui-checked": {
+                          color: "#000",
+                        },
+                      }}
+                    />
+                  )
+                }
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography sx={{ fontSize: "0.875rem" }}>
+                      {column.headerName}
+                    </Typography>
+                    {isLocked && (
+                      <Typography 
+                        variant="caption" 
+                        sx={{ 
+                          color: "#999", 
+                          fontSize: "0.7rem",
+                          fontStyle: "italic"
+                        }}
+                      >
+                        (Always visible)
+                      </Typography>
+                    )}
+                  </Box>
+                }
+                sx={{
+                  width: "100%",
+                  m: 0,
+                  "& .MuiFormControlLabel-label": {
+                    fontSize: "0.875rem",
+                  },
+                }}
+              />
+            </MenuItem>
+          );
+        })}
       </Box>
       <Divider />
       <Box sx={{ p: 1, display: "flex", gap: 1 }}>
@@ -322,6 +387,7 @@ const ActionBar = ({
               startIcon={<AddIcon />}
               onClick={onNewInvoice}
               size="small"
+              disabled={isNewButtonDisabled}
               sx={{
                 bgcolor: "black",
                 "&:hover": { bgcolor: "#333" },
@@ -333,16 +399,19 @@ const ActionBar = ({
               {buttonName}
             </Button>
 
-            <Tooltip title="Export">
-              <IconButton
-                onClick={onExport}
-                sx={{
-                  border: "1px solid #e0e0e0",
-                  borderRadius: 1,
-                }}
-              >
-                <FileDownloadIcon fontSize="small" />
-              </IconButton>
+            <Tooltip title={isExportDisabled ? "No data to export" : "Export"}>
+              <span>
+                <IconButton
+                  onClick={onExport}
+                  disabled={isExportDisabled}
+                  sx={{
+                    border: "1px solid #e0e0e0",
+                    borderRadius: 1,
+                  }}
+                >
+                  <FileDownloadIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
 
             <Tooltip title="Columns">
@@ -351,7 +420,7 @@ const ActionBar = ({
                 sx={{
                   border: "1px solid #e0e0e0",
                   borderRadius: 1,
-                  backgroundColor: columns.some((c) => !c.visible)
+                  backgroundColor: columns.some((c) => !c.visible && !isColumnLocked(c.field))
                     ? "#f3f4f6"
                     : "transparent",
                 }}

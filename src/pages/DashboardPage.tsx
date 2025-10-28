@@ -868,10 +868,12 @@ const DashboardPage = () => {
                                   index === 0
                                     ? "#fbbf24"
                                     : index === 1
-                                    ? "#d1d5db"
+                                    ? "#669bebff"
                                     : index === 2
-                                    ? "#f97316"
-                                    : "#f3f4f6",
+                                    ? "#c5f613ff"
+                                    : index === 3
+                                    ? "#d1ddf6ff"
+                                    : "#58e4d9ff",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -916,30 +918,6 @@ const DashboardPage = () => {
                             {companyCurrency}
                             {formatNumber(customer.amount)}
                           </Typography>
-                        </Box>
-
-                        {/* Progress Bar */}
-                        <Box sx={{ width: "100%", mt: 1 }}>
-                          <LinearProgress
-                            variant="determinate"
-                            value={customer.percentage}
-                            sx={{
-                              height: 8,
-                              borderRadius: 1,
-                              bgcolor: "rgba(0,0,0,0.05)",
-                              "& .MuiLinearProgress-bar": {
-                                borderRadius: 1,
-                                bgcolor:
-                                  index === 0
-                                    ? "#fbbf24"
-                                    : index === 1
-                                    ? "#9ca3af"
-                                    : index === 2
-                                    ? "#f97316"
-                                    : theme.palette.primary.main,
-                              },
-                            }}
-                          />
                         </Box>
                       </ListItem>
                       {index < topCustomers.length - 1 && (
@@ -996,8 +974,8 @@ const DashboardPage = () => {
                             index === 0
                               ? "#fbbf24"
                               : index === 1
-                              ? "#9ca3af"
-                              : "#f97316",
+                              ? "#669bebff"
+                              : "#c5f613ff",
                           borderRadius: "50%",
                           opacity: 0.2,
                         }}

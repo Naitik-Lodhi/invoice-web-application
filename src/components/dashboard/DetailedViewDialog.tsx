@@ -15,7 +15,6 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import InventoryIcon from "@mui/icons-material/Inventory";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 
 interface DetailedViewDialogProps {
@@ -52,10 +51,6 @@ const DetailedViewDialog = ({
   const totalValue = allItems.reduce((sum, item) => sum + item.value, 0);
   const percentage = ((selectedItem.value / totalValue) * 100).toFixed(1);
 
-  // Calculate average price per item
-  const avgPrice = selectedItem.quantity > 0 
-    ? selectedItem.value / selectedItem.quantity 
-    : 0;
 
   return (
     <Dialog
@@ -136,49 +131,6 @@ const DetailedViewDialog = ({
             </Typography>
           </Box>
 
-          {/* Quantity Sold */}
-          <Box
-            sx={{
-              p: 2,
-              borderRadius: 1,
-              bgcolor: theme.palette.success.main + "10",
-              border: `1px solid ${theme.palette.success.main}30`,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <InventoryIcon color="success" fontSize="small" />
-              <Typography variant="caption" color="text.secondary">
-                Quantity Sold
-              </Typography>
-            </Box>
-            <Typography variant="h5" fontWeight="bold">
-              {selectedItem.quantity.toLocaleString("en-US")}
-            </Typography>
-          </Box>
-
-          {/* Average Price */}
-          <Box
-            sx={{
-              p: 2,
-              borderRadius: 1,
-              bgcolor: theme.palette.warning.main + "10",
-              border: `1px solid ${theme.palette.warning.main}30`,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <TrendingUpIcon color="warning" fontSize="small" />
-              <Typography variant="caption" color="text.secondary">
-                Average Price
-              </Typography>
-            </Box>
-            <Typography variant="h5" fontWeight="bold">
-              {currencySymbol}
-              {avgPrice.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </Typography>
-          </Box>
 
           {/* Market Share */}
           <Box
@@ -241,9 +193,6 @@ const DetailedViewDialog = ({
                     )}
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      {item.quantity} units
-                    </Typography>
                     <Typography
                       variant="body2"
                       fontWeight={isSelected ? "bold" : "normal"}
