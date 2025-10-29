@@ -11,9 +11,35 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { SnackbarProvider } from "notistack";
 import InvoicesPage from "./pages/InvoicesPage";
 import { useEffect } from "react";
+import { toast } from "./utils/toast";
+import ErrorBoundaryTestPage from "./test/ErrorBoundaryTests";
+import ErrorBoundary from "./error/ErrorBoundary";
 
 const App = () => {
   const { company } = useAuth();
+
+  // In App.tsx or index.tsx
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error("Uncaught error:", event.error);
+      toast.error("An unexpected error occurred");
+      event.preventDefault();
+    };
+
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      console.error("Unhandled promise rejection:", event.reason);
+      toast.error("An unexpected error occurred");
+      event.preventDefault();
+    };
+
+    window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleRejection);
+
+    return () => {
+      window.removeEventListener("error", handleError);
+      window.removeEventListener("unhandledrejection", handleRejection);
+    };
+  }, []);
 
   // ✅ Auto-save logo on app load
   useEffect(() => {
@@ -80,6 +106,19 @@ const App = () => {
             <Route path="itemlist" element={<ItemListPage />} />
             <Route path="invoices" element={<InvoicesPage />} />
           </Route>
+
+          <Route
+            path="/test-error-boundaries"
+            element={
+              <ProtectedRoute>
+                <ErrorBoundary>
+                  {" "}
+                  {/* ✅ Wrap with ErrorBoundary */}
+                  <ErrorBoundaryTestPage />
+                </ErrorBoundary>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Redirect unknown routes to dashboard */}
           <Route path="*" element={<Navigate to="/" replace />} />

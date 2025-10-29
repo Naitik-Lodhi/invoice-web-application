@@ -9,7 +9,8 @@ import {
 } from "react-hook-form";
 import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
 import CloseIcon from "@mui/icons-material/Close";
-import { FileUploadErrorBoundary } from "../../error/ErrorBoundary";
+import { FileUploadErrorBoundary, withErrorHandler } from "../../error/ErrorBoundary";
+import { showToast, toast } from "../../utils/toast";
 
 interface FileUploadFieldProps<T extends FieldValues> {
   name: Path<T>;
@@ -53,35 +54,41 @@ const FileUploadField = <T extends FieldValues>({
     };
   }, [preview]);
 
+  // Inside FileUploadField component
   const handleFileChange = (
     file: File | null,
     onChange: (value: any) => void
   ) => {
-    if (file) {
-      // Validate file size
-      if (file.size > maxSize * 1024 * 1024) {
-        alert(`File size must be less than ${maxSize}MB`);
-        return;
-      }
+    try {
+      if (file) {
+        // Validate file size
+        if (file.size > maxSize * 1024 * 1024) {
+          alert(`File size must be less than ${maxSize}MB`);
+          return;
+        }
 
-      // Clean up previous object URL
-      if (preview && preview.startsWith("blob:")) {
-        URL.revokeObjectURL(preview);
-      }
+        // Clean up previous object URL
+        if (preview && preview.startsWith("blob:")) {
+          URL.revokeObjectURL(preview);
+        }
 
-      // Create new preview
-      const newPreview = URL.createObjectURL(file);
-      setPreview(newPreview);
-      setIsExistingImageRemoved(false); // ✅ Reset removal flag
-      onChange(file);
-    } else {
-      if (preview && preview.startsWith("blob:")) {
-        URL.revokeObjectURL(preview);
+        // Create new preview
+        const newPreview = URL.createObjectURL(file);
+        setPreview(newPreview);
+        setIsExistingImageRemoved(false);
+        onChange(file);
+      } else {
+        if (preview && preview.startsWith("blob:")) {
+          URL.revokeObjectURL(preview);
+        }
+        setPreview(
+          existingImageUrl && !isExistingImageRemoved ? existingImageUrl : null
+        );
+        onChange(null);
       }
-      setPreview(
-        existingImageUrl && !isExistingImageRemoved ? existingImageUrl : null
-      );
-      onChange(null);
+    } catch (error) {
+      console.error("File upload error:", error);
+      showToast("Failed to process file. Please try again.");
     }
   };
 
@@ -221,10 +228,16 @@ const FileUploadField = <T extends FieldValues>({
                     id={name}
                     data-testid="file-upload-input"
                     accept={accept}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      handleFileChange(file || null, onChange);
-                    }}
+                    onChange={withErrorHandler(
+                      (e) => {
+                        const file = e.target.files?.[0];
+                        handleFileChange(file || null, onChange);
+                      },
+                      (error) => {
+                        console.error("File input error:", error);
+                        toast.error("Failed to process file");
+                      }
+                    )}
                   />
                 </Button>
 

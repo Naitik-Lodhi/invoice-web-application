@@ -4,6 +4,7 @@ import { Box, Button, Typography, Paper, Container } from "@mui/material";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import HomeIcon from "@mui/icons-material/Home";
+import { toast } from "../utils/toast";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -52,6 +53,18 @@ export class ErrorBoundary extends Component<
     // logErrorToService(error, errorInfo);
   }
 
+  // ErrorBoundary.tsx - Add this method
+  componentDidUpdate(prevProps: ErrorBoundaryProps) {
+    // Reset error state if children change (via key prop)
+    if (this.state.hasError && prevProps.children !== this.props.children) {
+      this.setState({
+        hasError: false,
+        error: null,
+        errorInfo: null,
+      });
+    }
+  }
+
   resetError = () => {
     this.setState({
       hasError: false,
@@ -70,7 +83,11 @@ export class ErrorBoundary extends Component<
 
   render(): ReactNode {
     if (this.state.hasError) {
-      const { fallbackTitle, fallbackMessage, showHomeButton = true } = this.props;
+      const {
+        fallbackTitle,
+        fallbackMessage,
+        showHomeButton = true,
+      } = this.props;
       const { error, errorInfo } = this.state;
 
       return (
@@ -304,8 +321,7 @@ export class FileUploadErrorBoundary extends ErrorBoundary {
     super({
       ...props,
       fallbackTitle: "Upload Error",
-      fallbackMessage:
-        "File upload failed. Please check file size and format.",
+      fallbackMessage: "File upload failed. Please check file size and format.",
       showHomeButton: false,
     });
   }
@@ -328,6 +344,39 @@ export function withErrorBoundary<P extends object>(
     );
   };
 }
+
+// Add this utility function to ErrorBoundary.tsx or a separate utils file
+export const withErrorHandler = <T extends (...args: any[]) => any>(
+  handler: T,
+  fallback?: (error: Error) => void
+): T => {
+  return ((...args: any[]) => {
+    try {
+      const result = handler(...args);
+
+      // If it's a promise, catch async errors
+      if (result instanceof Promise) {
+        return result.catch((error) => {
+          console.error("Async error in handler:", error);
+          if (fallback) {
+            fallback(error);
+          } else {
+            toast.error("An error occurred. Please try again.");
+          }
+        });
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Error in handler:", error);
+      if (fallback) {
+        fallback(error as Error);
+      } else {
+        toast.error("An error occurred. Please try again.");
+      }
+    }
+  }) as T;
+};
 
 // ============================================
 // USAGE EXAMPLES

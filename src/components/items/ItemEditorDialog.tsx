@@ -39,6 +39,7 @@ const ItemEditorDialog = ({
   const [dataLoaded, setDataLoaded] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [imageRemoved, setImageRemoved] = useState(false);
+  const [errorKey, setErrorKey] = useState(0);
 
   const {
     control,
@@ -170,6 +171,7 @@ const ItemEditorDialog = ({
     setSaveError(null);
     setDataLoaded(false);
     setImageRemoved(false);
+    setErrorKey((prev) => prev + 1);
     onClose();
   };
 
@@ -179,7 +181,6 @@ const ItemEditorDialog = ({
   };
 
   return (
-    <FormErrorBoundary>
       <Dialog
         open={open}
         onClose={handleClose}
@@ -217,6 +218,7 @@ const ItemEditorDialog = ({
               <CircularProgress />
             </Box>
           ) : (
+             <FormErrorBoundary key={errorKey}>
             <Box
               component="form"
               onSubmit={handleSubmit(onSubmit)}
@@ -411,10 +413,10 @@ const ItemEditorDialog = ({
                 </Button>
               </Box>
             </Box>
+            </FormErrorBoundary>
           )}
         </DialogContent>
       </Dialog>
-    </FormErrorBoundary>
   );
 };
 
