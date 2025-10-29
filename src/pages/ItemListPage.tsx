@@ -165,14 +165,12 @@ const ItemListPage = () => {
     }
   };
 
-  // ✅ FIXED: Handle save item with proper error handling and state update
-  // src/pages/ItemListPage.tsx
-  // Replace handleSaveItem function
+  // src/pages/ItemListPage.tsx - FIXED IMAGE UPLOAD
+  // Replace handleSaveItem function with this:
 
   const handleSaveItem = async (data: ItemFormData) => {
     try {
       let itemID = editingItem?.itemID || 0;
-      let imageUploadSuccess = true;
 
       const itemData = {
         itemName: data.itemName.trim(),
@@ -183,24 +181,12 @@ const ItemListPage = () => {
 
       let response: any;
 
+      // 1️⃣ CREATE OR UPDATE ITEM
       if (editorMode === "new") {
         console.log("📤 Creating new item...", itemData);
         response = await itemService.create(itemData);
-
-        // ✅ FIXED: Get itemID from transformed response
         itemID = response.itemID;
-
         console.log("✅ Item created with ID:", itemID);
-
-        if (!itemID || itemID === 0) {
-          console.error("❌ Could not extract itemID");
-          await fetchItems();
-          toast.warning(
-            "Item created but couldn't upload image. Please edit to add image."
-          );
-          handleCloseEditor();
-          return;
-        }
       } else {
         console.log("📤 Updating item ID:", itemID);
         response = await itemService.update(itemID, {
@@ -210,14 +196,19 @@ const ItemListPage = () => {
         console.log("✅ Item updated");
       }
 
-      // ✅ Upload image if provided
-      if (data.imageRemoved && editorMode === "edit") {
-        console.log("🗑️ Removing image for item ID:", itemID);
+      // 2️⃣ HANDLE IMAGE UPLOAD/REMOVAL
+      const hasNewImage = data.itemPicture instanceof File;
+      const shouldRemoveImage =
+        data.imageRemoved || data.itemPicture === "DELETE_IMAGE";
+
+      if (hasNewImage) {
+        // ✅ UPLOAD NEW IMAGE
+        console.log("📷 Uploading new image for item ID:", itemID);
 
         try {
           const formData = new FormData();
           formData.append("ItemID", String(itemID));
-          formData.append("Picture", new Blob(), "");
+          formData.append("Picture", data.itemPicture as File);
 
           const uploadResponse = await axiosInstance.post(
             "/Item/UpdateItemPicture",
@@ -229,23 +220,37 @@ const ItemListPage = () => {
             }
           );
 
-          console.log(
-            "✅ Image upload response:",
-            uploadResponse.status,
-            uploadResponse.data
-          );
-          console.log("✅ Image removed successfully");
+          console.log("✅ Image uploaded successfully:", uploadResponse.status);
         } catch (picError: any) {
           console.error("❌ Image upload failed:", picError);
-          imageUploadSuccess = false;
           toast.error("Image upload failed. Item saved without image.");
+        }
+      } else if (shouldRemoveImage && editorMode === "edit") {
+        // ✅ REMOVE EXISTING IMAGE
+        console.log("🗑️ Removing image for item ID:", itemID);
+
+        try {
+          const formData = new FormData();
+          formData.append("ItemID", String(itemID));
+          formData.append("Picture", new Blob(), ""); // Empty blob to remove
+
+          await axiosInstance.post("/Item/UpdateItemPicture", formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          });
+
+          console.log("✅ Image removed successfully");
+        } catch (picError: any) {
+          console.error("❌ Image removal failed:", picError);
+          toast.error("Image removal failed");
         }
       }
 
-      // Refresh items
+      // 3️⃣ REFRESH ITEMS LIST
       await fetchItems();
 
-      // Success message
+      // 4️⃣ SUCCESS MESSAGE
       toast.success(
         editorMode === "new"
           ? "Item created successfully"
@@ -271,7 +276,6 @@ const ItemListPage = () => {
       throw new Error(errorMessage || "Failed to save item");
     }
   };
-
   // Handle export
   const handleExport = () => {
     exportItemsToExcel(filteredItems, companyCurrency);

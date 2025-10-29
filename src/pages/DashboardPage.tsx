@@ -146,6 +146,7 @@ const DashboardPage = () => {
   const [topCustomers, setTopCustomers] = useState<
     { name: string; amount: number; percentage: number }[]
   >([]);
+  const [nextInvoiceNumber, setNextInvoiceNumber] = useState<number>(1001);
 
   // Add this function to calculate top customers (add it with your other useCallback functions)
   const calculateTopCustomers = useCallback(() => {
@@ -193,21 +194,20 @@ const DashboardPage = () => {
     return new Intl.NumberFormat("en-US").format(num);
   };
 
-  // Get next invoice number
-  const getNextInvoiceNumber = useCallback(() => {
-    if (!invoiceList?.invoices?.length) return 1001;
+  const fetchNextInvoiceNumber = useCallback(async () => {
+    try {
+      const latestNumber = await invoiceService.getLatestInvoiceNumber();
+      setNextInvoiceNumber(latestNumber);
+    } catch (error) {
+      console.error("Failed to fetch next invoice number:", error);
+      setNextInvoiceNumber(1001);
+    }
+  }, []);
 
-    const maxInvoiceNo = Math.max(
-      ...invoiceList.invoices.map((inv: any) => {
-        const num = parseInt(inv.invoiceNo, 10);
-        return isNaN(num) ? 0 : num;
-      })
-    );
-
-    return isFinite(maxInvoiceNo) ? maxInvoiceNo + 1 : 1001;
-  }, [invoiceList]);
-
-  const nextInvoiceNumber = getNextInvoiceNumber();
+  // ✅ Fetch on initial load
+  useEffect(() => {
+    fetchNextInvoiceNumber();
+  }, [fetchNextInvoiceNumber]);
 
   // Column visibility
   const getInitialColumnVisibility = (): Column[] => {
@@ -281,6 +281,7 @@ const DashboardPage = () => {
         });
       } else if (editorMode === "new") {
         response = await invoiceService.create(data as any);
+        await fetchNextInvoiceNumber();
       } else {
         throw new Error(`Invalid mode: ${editorMode}`);
       }

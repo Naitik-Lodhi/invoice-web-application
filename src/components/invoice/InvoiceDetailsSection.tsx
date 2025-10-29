@@ -1,13 +1,13 @@
 // src/components/invoice/InvoiceDetailsSection.tsx
-import { Box, Typography, Card, CardContent, Grid } from '@mui/material';
-import {type Control,type FieldErrors } from 'react-hook-form';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Controller } from 'react-hook-form';
-import dayjs from 'dayjs';
-import type { InvoiceFormData } from './InvoiceEditor';
-import FormField from '../form/FormField';
+import { Box, Typography, Card, CardContent, Grid } from "@mui/material";
+import { type Control, type FieldErrors } from "react-hook-form";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { Controller } from "react-hook-form";
+import dayjs from "dayjs";
+import type { InvoiceFormData } from "./InvoiceEditor";
+import FormField from "../form/FormField";
 
 interface InvoiceDetailsSectionProps {
   control: Control<InvoiceFormData>;
@@ -15,50 +15,57 @@ interface InvoiceDetailsSectionProps {
   isMobile: boolean;
 }
 
-const InvoiceDetailsSection = ({
-  control,
-}: InvoiceDetailsSectionProps) => {
+const InvoiceDetailsSection = ({ control }: InvoiceDetailsSectionProps) => {
   return (
-    <Card sx={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-      <CardContent sx={{ p: { xs: 2, sm: 1 } }}>
+    <Card sx={{ boxShadow: 1 }}>
+      <CardContent
+        sx={{
+          p: { xs: 1.5, sm: 2 },
+          "&:last-child": { pb: { xs: 1.5, sm: 2 } },
+        }}
+      >
         <Typography
-          variant="h6"
+          variant="subtitle1"
           sx={{
             mb: 1,
             fontWeight: 600,
-            fontSize: { xs: '1rem', sm: '1.125rem' },
+            fontSize: { xs: "0.875rem", sm: "1rem" },
           }}
         >
           Invoice Details
         </Typography>
 
-        <Grid container spacing={1}>
-          {/* Row 1: Invoice No & Invoice Date */}
-          <Grid size={{ xs: 12, sm: 6 }}>
+        <Grid container spacing={{ xs: 1, sm: 1.5 }}>
+          {/* Invoice No & Date */}
+          <Grid size={{ xs: 6, sm: 3 }}>
             <FormField
               name="invoiceNo"
               control={control}
               label="Invoice No"
               type="number"
-              placeholder="INV-001"
+              placeholder="1001"
               required
             />
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 6, sm: 3 }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <Controller
                 name="invoiceDate"
                 control={control}
-                rules={{ required: 'Pick a date.' }}
+                rules={{ required: "Date required" }}
                 render={({ field, fieldState: { error } }) => (
-                  <Box sx={{ width: '100%', mb:1 }}>
+                  <Box sx={{ width: "100%" }}>
                     <Typography
                       component="label"
-                      sx={{ display: 'block', mb: 1, fontWeight: '500' }}
+                      sx={{
+                        display: "block",
+                        mb: 0.5,
+                        fontWeight: 500,
+                        fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                      }}
                     >
-                      Invoice Date
-                      <span style={{ color: 'red', marginLeft: '4px' }}>*</span>
+                      Date <span style={{ color: "red" }}>*</span>
                     </Typography>
                     <DatePicker
                       value={field.value ? dayjs(field.value) : null}
@@ -67,13 +74,12 @@ const InvoiceDetailsSection = ({
                         textField: {
                           fullWidth: true,
                           error: !!error,
-                          helperText: error?.message,
+                          size: "small",
                           sx: {
-                            '& .MuiOutlinedInput-root': {
-                              borderRadius: '6px',
-                              '& input': {
-                                height: '42px',
-                                padding: '0 14px',
+                            "& .MuiOutlinedInput-root": {
+                              "& input": {
+                                py: 0.75,
+                                fontSize: { xs: "0.875rem", sm: "1rem" },
                               },
                             },
                           },
@@ -86,38 +92,38 @@ const InvoiceDetailsSection = ({
             </LocalizationProvider>
           </Grid>
 
-          {/* Row 2: Customer Name & City */}
-          <Grid size={{ xs: 12, sm: 6 }}>
+          {/* Customer & City */}
+          <Grid size={{ xs: 12, sm: 3 }}>
             <FormField
               name="customerName"
               control={control}
               label="Customer"
               type="text"
-              placeholder="Enter customer name"
+              placeholder="Customer name"
               required
               maxLength={50}
             />
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 12, sm: 3 }}>
             <FormField
               name="city"
               control={control}
               label="City"
               type="text"
-              placeholder="Enter city"
+              placeholder="City"
               maxLength={50}
             />
           </Grid>
 
-          {/* Row 3: Address & Notes */}
+          {/* Address & Notes */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormField
               name="address"
               control={control}
               label="Address"
-              placeholder="Enter address"
-              maxLength={500}
+              placeholder="Address"
+              maxLength={200}
             />
           </Grid>
 
@@ -126,8 +132,8 @@ const InvoiceDetailsSection = ({
               name="notes"
               control={control}
               label="Notes"
-              placeholder="Enter notes"
-              maxLength={500}
+              placeholder="Notes"
+              maxLength={200}
             />
           </Grid>
         </Grid>

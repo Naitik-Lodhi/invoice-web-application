@@ -477,4 +477,38 @@ export const invoiceService = {
     );
     return response.data;
   },
+
+  getLatestInvoiceNumber: async (): Promise<number> => {
+    try {
+      // ✅ Fetch ALL invoices (no filter) to get absolute max
+      const response = await axiosInstance.get(API_ENDPOINTS.invoices.GET_LIST);
+      const allInvoices = response.data;
+
+      if (!allInvoices || allInvoices.length === 0) {
+        console.log("📋 No invoices exist, starting from 1001");
+        return 1001;
+      }
+
+      // ✅ Find maximum invoice number across ALL invoices
+      const maxInvoiceNo = Math.max(
+        ...allInvoices.map((inv: any) => {
+          const num = parseInt(inv.invoiceNo, 10);
+          return isNaN(num) ? 0 : num;
+        })
+      );
+
+      const nextNumber = isFinite(maxInvoiceNo) ? maxInvoiceNo + 1 : 1001;
+
+      console.log("✅ Latest invoice number:", {
+        totalInvoices: allInvoices.length,
+        maxInvoiceNo,
+        nextNumber,
+      });
+
+      return nextNumber;
+    } catch (error) {
+      console.error("❌ Failed to get latest invoice number:", error);
+      return 1001; // Fallback
+    }
+  },
 };

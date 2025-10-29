@@ -452,17 +452,40 @@ const InvoiceEditor = ({
 
   return (
     <FormErrorBoundary>
-      <Dialog open={open} onClose={handleClose} maxWidth={"lg"}>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        maxWidth="xl"
+        fullWidth
+        fullScreen={isMobile}
+        PaperProps={{
+          sx: {
+            height: isMobile ? "100vh" : "90vh",
+            maxHeight: isMobile ? "100vh" : "90vh",
+            m: isMobile ? 0 : 2,
+          },
+        }}
+      >
+        {/* Header */}
         <AppBar
           sx={{
-            position: "relative",
+            position: "sticky",
+            top: 0,
             backgroundColor: "white",
             color: "black",
             boxShadow: 1,
+            zIndex: 1100,
           }}
         >
-          <Toolbar>
-            <Typography variant="h6" sx={{ flex: 1, fontWeight: 600 }}>
+          <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }}>
+            <Typography
+              variant="h6"
+              sx={{
+                flex: 1,
+                fontWeight: 600,
+                fontSize: { xs: "1rem", sm: "1.25rem" },
+              }}
+            >
               {mode === "new" ? "New Invoice" : "Edit Invoice"}
             </Typography>
 
@@ -481,6 +504,7 @@ const InvoiceEditor = ({
                   variant="outlined"
                   onClick={handleClose}
                   disabled={saving}
+                  size="small"
                 >
                   Cancel
                 </Button>
@@ -488,28 +512,57 @@ const InvoiceEditor = ({
                   variant="contained"
                   onClick={handleSubmit(onSubmit)}
                   disabled={!isFormValid}
+                  size="small"
                   sx={{
                     bgcolor: "black",
                     "&:hover": { bgcolor: "#333" },
                     "&:disabled": { bgcolor: "#e0e0e0", color: "#9e9e9e" },
                   }}
                 >
-                  Save
+                  {saving ? <CircularProgress size={18} /> : "Save"}
                 </Button>
               </Box>
             )}
           </Toolbar>
         </AppBar>
 
-        <DialogContent sx={{ backgroundColor: "#fafafa" }}>
-          <Box sx={{ maxWidth: 1400 }}>
-            <InvoiceDetailsSection
-              control={control}
-              errors={errors}
-              isMobile={isMobile}
-            />
+        {/* Content - NO SCROLL */}
+        <DialogContent
+          sx={{
+            p: { xs: 1, sm: 2 },
+            backgroundColor: "#fafafa",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden", // ✅ No scroll on main container
+            height: "calc(100% - 64px)", // Account for header
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: { xs: 1, sm: 2 },
+              height: "100%",
+              overflow: "hidden",
+            }}
+          >
+            {/* 1. Invoice Details - Compact */}
+            <Box sx={{ flexShrink: 0 }}>
+              <InvoiceDetailsSection
+                control={control}
+                errors={errors}
+                isMobile={isMobile}
+              />
+            </Box>
 
-            <Box>
+            {/* 2. Line Items - Scrollable Section */}
+            <Box
+              sx={{
+                flex: 1,
+                overflow: "auto", // ✅ Only line items scroll
+                minHeight: 0,
+              }}
+            >
               <LineItemsGrid
                 lineItems={lineItems}
                 setLineItems={setLineItems}
@@ -519,7 +572,8 @@ const InvoiceEditor = ({
               />
             </Box>
 
-            <Box>
+            {/* 3. Totals Panel - Compact & Fixed */}
+            <Box sx={{ flexShrink: 0 }}>
               <TotalsPanel
                 subTotal={subTotal}
                 taxPercent={taxPercent}
@@ -532,12 +586,12 @@ const InvoiceEditor = ({
               />
             </Box>
 
-            {/* Validation Summary */}
+            {/* Validation Summary - Compact */}
             {!isFormValid && (customerName || touchedFields.customerName) && (
               <Box
                 sx={{
-                  mt: 3,
-                  p: 2,
+                  flexShrink: 0,
+                  p: 1.5,
                   bgcolor: "#fff3cd",
                   borderRadius: 1,
                   border: "1px solid #ffc107",
@@ -545,41 +599,44 @@ const InvoiceEditor = ({
               >
                 <Typography
                   variant="body2"
-                  sx={{ fontWeight: 600, color: "#856404", mb: 1 }}
+                  sx={{ fontWeight: 600, color: "#856404", mb: 0.5 }}
                 >
-                  Please complete the following:
+                  Please complete:
                 </Typography>
-                <Box component="ul" sx={{ m: 0, pl: 2.5, color: "#856404" }}>
+                <Box
+                  component="ul"
+                  sx={{ m: 0, pl: 2, color: "#856404", fontSize: "0.75rem" }}
+                >
                   {!invoiceNo && (
-                    <Typography component="li" variant="body2">
-                      Invoice number is required
+                    <Typography component="li" variant="caption">
+                      Invoice number
                     </Typography>
                   )}
                   {!invoiceDate && (
-                    <Typography component="li" variant="body2">
-                      Invoice date is required
+                    <Typography component="li" variant="caption">
+                      Invoice date
                     </Typography>
                   )}
                   {(!customerName || customerName.trim().length === 0) && (
-                    <Typography component="li" variant="body2">
-                      Customer name is required
+                    <Typography component="li" variant="caption">
+                      Customer name
                     </Typography>
                   )}
                   {!hasValidLineItems && (
-                    <Typography component="li" variant="body2">
-                      At least one line item with quantity &gt; 0 is required
+                    <Typography component="li" variant="caption">
+                      At least one valid line item
                     </Typography>
                   )}
                 </Box>
               </Box>
             )}
 
-            {/* Concurrency Error Alert */}
+            {/* Concurrency Error - Compact */}
             {concurrencyError && (
               <Box
                 sx={{
-                  mt: 3,
-                  p: 2,
+                  flexShrink: 0,
+                  p: 1.5,
                   bgcolor: "#fee2e2",
                   borderRadius: 1,
                   border: "1px solid #ef4444",
@@ -587,13 +644,15 @@ const InvoiceEditor = ({
               >
                 <Typography
                   variant="body2"
-                  sx={{ fontWeight: 600, color: "#991b1b", mb: 1 }}
+                  sx={{ fontWeight: 600, color: "#991b1b", mb: 0.5 }}
                 >
                   ⚠️ Concurrency Conflict
                 </Typography>
-                <Typography variant="body2" sx={{ color: "#991b1b", mb: 2 }}>
-                  This invoice was modified by another user. Please reload to
-                  see the latest changes.
+                <Typography
+                  variant="caption"
+                  sx={{ color: "#991b1b", display: "block", mb: 1 }}
+                >
+                  Modified by another user. Please reload.
                 </Typography>
                 <Button
                   variant="outlined"
@@ -605,10 +664,10 @@ const InvoiceEditor = ({
                   sx={{
                     borderColor: "#ef4444",
                     color: "#ef4444",
-                    "&:hover": { borderColor: "#dc2626" },
+                    textTransform: "none",
                   }}
                 >
-                  Close and Reload
+                  Close
                 </Button>
               </Box>
             )}
@@ -616,7 +675,13 @@ const InvoiceEditor = ({
             {/* Mobile Save Button */}
             {isMobile && (
               <Box
-                sx={{ mt: 3, display: "flex", flexDirection: "column", gap: 1 }}
+                sx={{
+                  flexShrink: 0,
+                  display: "flex",
+                  gap: 1,
+                  pt: 1,
+                  borderTop: "1px solid #e0e0e0",
+                }}
               >
                 <Button
                   fullWidth
@@ -627,7 +692,6 @@ const InvoiceEditor = ({
                     bgcolor: "black",
                     "&:hover": { bgcolor: "#333" },
                     "&:disabled": { bgcolor: "#e0e0e0", color: "#9e9e9e" },
-                    py: 1.5,
                   }}
                 >
                   {saving ? <CircularProgress size={20} /> : "Save"}
@@ -637,7 +701,6 @@ const InvoiceEditor = ({
                   variant="outlined"
                   onClick={handleClose}
                   disabled={saving}
-                  sx={{ py: 1.5 }}
                 >
                   Cancel
                 </Button>
