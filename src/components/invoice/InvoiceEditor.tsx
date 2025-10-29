@@ -22,6 +22,7 @@ import { invoiceService } from "../../services/invoiceService";
 import { itemService } from "../../services/itemService";
 import { toast } from "../../utils/toast";
 import dayjs from "dayjs";
+import { FormErrorBoundary } from "../../error/ErrorBoundary";
 
 // Types
 export interface LineItem {
@@ -450,200 +451,202 @@ const InvoiceEditor = ({
   }, [open, isFormValid, handleSubmit, onSubmit]);
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth={"lg"}>
-      <AppBar
-        sx={{
-          position: "relative",
-          backgroundColor: "white",
-          color: "black",
-          boxShadow: 1,
-        }}
-      >
-        <Toolbar>
-          <Typography variant="h6" sx={{ flex: 1, fontWeight: 600 }}>
-            {mode === "new" ? "New Invoice" : "Edit Invoice"}
-          </Typography>
+    <FormErrorBoundary>
+      <Dialog open={open} onClose={handleClose} maxWidth={"lg"}>
+        <AppBar
+          sx={{
+            position: "relative",
+            backgroundColor: "white",
+            color: "black",
+            boxShadow: 1,
+          }}
+        >
+          <Toolbar>
+            <Typography variant="h6" sx={{ flex: 1, fontWeight: 600 }}>
+              {mode === "new" ? "New Invoice" : "Edit Invoice"}
+            </Typography>
 
-          {isMobile ? (
-            <IconButton
-              edge="end"
-              color="inherit"
-              onClick={handleClose}
-              disabled={saving}
-            >
-              <CloseIcon />
-            </IconButton>
-          ) : (
-            <Box sx={{ display: "flex", gap: 1 }}>
-              <Button
-                variant="outlined"
+            {isMobile ? (
+              <IconButton
+                edge="end"
+                color="inherit"
                 onClick={handleClose}
                 disabled={saving}
               >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleSubmit(onSubmit)}
-                disabled={!isFormValid}
-                sx={{
-                  bgcolor: "black",
-                  "&:hover": { bgcolor: "#333" },
-                  "&:disabled": { bgcolor: "#e0e0e0", color: "#9e9e9e" },
-                }}
-              >
-                Save
-              </Button>
-            </Box>
-          )}
-        </Toolbar>
-      </AppBar>
-
-      <DialogContent sx={{ backgroundColor: "#fafafa" }}>
-        <Box sx={{ maxWidth: 1400 }}>
-          <InvoiceDetailsSection
-            control={control}
-            errors={errors}
-            isMobile={isMobile}
-          />
-
-          <Box >
-            <LineItemsGrid
-              lineItems={lineItems}
-              setLineItems={setLineItems}
-              companyCurrency={companyCurrency}
-              isMobile={isMobile}
-              availableItems={availableItems}
-            />
-          </Box>
-
-          <Box>
-            <TotalsPanel
-              subTotal={subTotal}
-              taxPercent={taxPercent}
-              taxAmount={taxAmount}
-              invoiceAmount={invoiceAmount}
-              onTaxPercentChange={handleTaxPercentChange}
-              onTaxAmountChange={handleTaxAmountChange}
-              companyCurrency={companyCurrency}
-              isMobile={isMobile}
-            />
-          </Box>
-
-          {/* Validation Summary */}
-          {!isFormValid && (customerName || touchedFields.customerName) && (
-            <Box
-              sx={{
-                mt: 3,
-                p: 2,
-                bgcolor: "#fff3cd",
-                borderRadius: 1,
-                border: "1px solid #ffc107",
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{ fontWeight: 600, color: "#856404", mb: 1 }}
-              >
-                Please complete the following:
-              </Typography>
-              <Box component="ul" sx={{ m: 0, pl: 2.5, color: "#856404" }}>
-                {!invoiceNo && (
-                  <Typography component="li" variant="body2">
-                    Invoice number is required
-                  </Typography>
-                )}
-                {!invoiceDate && (
-                  <Typography component="li" variant="body2">
-                    Invoice date is required
-                  </Typography>
-                )}
-                {(!customerName || customerName.trim().length === 0) && (
-                  <Typography component="li" variant="body2">
-                    Customer name is required
-                  </Typography>
-                )}
-                {!hasValidLineItems && (
-                  <Typography component="li" variant="body2">
-                    At least one line item with quantity &gt; 0 is required
-                  </Typography>
-                )}
+                <CloseIcon />
+              </IconButton>
+            ) : (
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  onClick={handleClose}
+                  disabled={saving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleSubmit(onSubmit)}
+                  disabled={!isFormValid}
+                  sx={{
+                    bgcolor: "black",
+                    "&:hover": { bgcolor: "#333" },
+                    "&:disabled": { bgcolor: "#e0e0e0", color: "#9e9e9e" },
+                  }}
+                >
+                  Save
+                </Button>
               </Box>
-            </Box>
-          )}
+            )}
+          </Toolbar>
+        </AppBar>
 
-          {/* Concurrency Error Alert */}
-          {concurrencyError && (
-            <Box
-              sx={{
-                mt: 3,
-                p: 2,
-                bgcolor: "#fee2e2",
-                borderRadius: 1,
-                border: "1px solid #ef4444",
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{ fontWeight: 600, color: "#991b1b", mb: 1 }}
-              >
-                ⚠️ Concurrency Conflict
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#991b1b", mb: 2 }}>
-                This invoice was modified by another user. Please reload to see
-                the latest changes.
-              </Typography>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => {
-                  setConcurrencyError(false);
-                  onClose();
-                }}
-                sx={{
-                  borderColor: "#ef4444",
-                  color: "#ef4444",
-                  "&:hover": { borderColor: "#dc2626" },
-                }}
-              >
-                Close and Reload
-              </Button>
-            </Box>
-          )}
+        <DialogContent sx={{ backgroundColor: "#fafafa" }}>
+          <Box sx={{ maxWidth: 1400 }}>
+            <InvoiceDetailsSection
+              control={control}
+              errors={errors}
+              isMobile={isMobile}
+            />
 
-          {/* Mobile Save Button */}
-          {isMobile && (
-            <Box
-              sx={{ mt: 3, display: "flex", flexDirection: "column", gap: 1 }}
-            >
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={handleSubmit(onSubmit)}
-                disabled={!isFormValid}
+            <Box>
+              <LineItemsGrid
+                lineItems={lineItems}
+                setLineItems={setLineItems}
+                companyCurrency={companyCurrency}
+                isMobile={isMobile}
+                availableItems={availableItems}
+              />
+            </Box>
+
+            <Box>
+              <TotalsPanel
+                subTotal={subTotal}
+                taxPercent={taxPercent}
+                taxAmount={taxAmount}
+                invoiceAmount={invoiceAmount}
+                onTaxPercentChange={handleTaxPercentChange}
+                onTaxAmountChange={handleTaxAmountChange}
+                companyCurrency={companyCurrency}
+                isMobile={isMobile}
+              />
+            </Box>
+
+            {/* Validation Summary */}
+            {!isFormValid && (customerName || touchedFields.customerName) && (
+              <Box
                 sx={{
-                  bgcolor: "black",
-                  "&:hover": { bgcolor: "#333" },
-                  "&:disabled": { bgcolor: "#e0e0e0", color: "#9e9e9e" },
-                  py: 1.5,
+                  mt: 3,
+                  p: 2,
+                  bgcolor: "#fff3cd",
+                  borderRadius: 1,
+                  border: "1px solid #ffc107",
                 }}
               >
-                {saving ? <CircularProgress size={20} /> : "Save"}
-              </Button>
-              <Button
-                fullWidth
-                variant="outlined"
-                onClick={handleClose}
-                disabled={saving}
-                sx={{ py: 1.5 }}
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 600, color: "#856404", mb: 1 }}
+                >
+                  Please complete the following:
+                </Typography>
+                <Box component="ul" sx={{ m: 0, pl: 2.5, color: "#856404" }}>
+                  {!invoiceNo && (
+                    <Typography component="li" variant="body2">
+                      Invoice number is required
+                    </Typography>
+                  )}
+                  {!invoiceDate && (
+                    <Typography component="li" variant="body2">
+                      Invoice date is required
+                    </Typography>
+                  )}
+                  {(!customerName || customerName.trim().length === 0) && (
+                    <Typography component="li" variant="body2">
+                      Customer name is required
+                    </Typography>
+                  )}
+                  {!hasValidLineItems && (
+                    <Typography component="li" variant="body2">
+                      At least one line item with quantity &gt; 0 is required
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            )}
+
+            {/* Concurrency Error Alert */}
+            {concurrencyError && (
+              <Box
+                sx={{
+                  mt: 3,
+                  p: 2,
+                  bgcolor: "#fee2e2",
+                  borderRadius: 1,
+                  border: "1px solid #ef4444",
+                }}
               >
-                Cancel
-              </Button>
-            </Box>
-          )}
-        </Box>
-      </DialogContent>
-    </Dialog>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 600, color: "#991b1b", mb: 1 }}
+                >
+                  ⚠️ Concurrency Conflict
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#991b1b", mb: 2 }}>
+                  This invoice was modified by another user. Please reload to
+                  see the latest changes.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    setConcurrencyError(false);
+                    onClose();
+                  }}
+                  sx={{
+                    borderColor: "#ef4444",
+                    color: "#ef4444",
+                    "&:hover": { borderColor: "#dc2626" },
+                  }}
+                >
+                  Close and Reload
+                </Button>
+              </Box>
+            )}
+
+            {/* Mobile Save Button */}
+            {isMobile && (
+              <Box
+                sx={{ mt: 3, display: "flex", flexDirection: "column", gap: 1 }}
+              >
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={handleSubmit(onSubmit)}
+                  disabled={!isFormValid}
+                  sx={{
+                    bgcolor: "black",
+                    "&:hover": { bgcolor: "#333" },
+                    "&:disabled": { bgcolor: "#e0e0e0", color: "#9e9e9e" },
+                    py: 1.5,
+                  }}
+                >
+                  {saving ? <CircularProgress size={20} /> : "Save"}
+                </Button>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={handleClose}
+                  disabled={saving}
+                  sx={{ py: 1.5 }}
+                >
+                  Cancel
+                </Button>
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+      </Dialog>
+    </FormErrorBoundary>
   );
 };
 

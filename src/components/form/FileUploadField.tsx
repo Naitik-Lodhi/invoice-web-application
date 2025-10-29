@@ -9,6 +9,7 @@ import {
 } from "react-hook-form";
 import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
 import CloseIcon from "@mui/icons-material/Close";
+import { FileUploadErrorBoundary } from "../../error/ErrorBoundary";
 
 interface FileUploadFieldProps<T extends FieldValues> {
   name: Path<T>;
@@ -113,158 +114,160 @@ const FileUploadField = <T extends FieldValues>({
   };
 
   return (
-    <Controller
-      name={name}
-      control={control}
-      render={({ field: { onChange, value }, fieldState: { error } }) => (
-        <Box sx={{ mb: 1 }}>
-          {/* Label */}
-          <Typography
-            component="label"
-            sx={{
-              display: "block",
-              mb: 0.5,
-              fontWeight: 500,
-              fontSize: "0.875rem",
-              color: "text.primary",
-            }}
-          >
-            {label}
-          </Typography>
+    <FileUploadErrorBoundary>
+      <Controller
+        name={name}
+        control={control}
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <Box sx={{ mb: 1 }}>
+            {/* Label */}
+            <Typography
+              component="label"
+              sx={{
+                display: "block",
+                mb: 0.5,
+                fontWeight: 500,
+                fontSize: "0.875rem",
+                color: "text.primary",
+              }}
+            >
+              {label}
+            </Typography>
 
-          {/* Upload Container */}
-          <Box
-            sx={{
-              border: `2px dashed ${error ? "#ef4444" : "#e0e0e0"}`,
-              borderRadius: 2,
-              p: 1,
-              textAlign: "center",
-              backgroundColor: error ? "#fef2f2" : "#fafafa",
-              transition: "all 0.2s",
-              "&:hover": {
-                borderColor: error ? "#ef4444" : "#a0a0a0",
-                backgroundColor: error ? "#fef2f2" : "#f5f5f5",
-              },
-            }}
-          >
-            {/* Preview Section */}
-            {preview && value !== "DELETE_IMAGE" ? (
-              <Box sx={{ position: "relative", display: "inline-block" }}>
-                <Avatar
-                  src={preview}
-                  variant="rounded"
-                  sx={{
-                    width: { xs: 70, sm: 80 },
-                    height: { xs: 70, sm: 80 },
-                    mb: 1.5,
-                    boxShadow: 2,
-                  }}
-                />
-                {/* Remove button */}
-                <IconButton
+            {/* Upload Container */}
+            <Box
+              sx={{
+                border: `2px dashed ${error ? "#ef4444" : "#e0e0e0"}`,
+                borderRadius: 2,
+                p: 1,
+                textAlign: "center",
+                backgroundColor: error ? "#fef2f2" : "#fafafa",
+                transition: "all 0.2s",
+                "&:hover": {
+                  borderColor: error ? "#ef4444" : "#a0a0a0",
+                  backgroundColor: error ? "#fef2f2" : "#f5f5f5",
+                },
+              }}
+            >
+              {/* Preview Section */}
+              {preview && value !== "DELETE_IMAGE" ? (
+                <Box sx={{ position: "relative", display: "inline-block" }}>
+                  <Avatar
+                    src={preview}
+                    variant="rounded"
+                    sx={{
+                      width: { xs: 70, sm: 80 },
+                      height: { xs: 70, sm: 80 },
+                      mb: 1.5,
+                      boxShadow: 2,
+                    }}
+                  />
+                  {/* Remove button */}
+                  <IconButton
+                    size="small"
+                    onClick={() => handleRemove(onChange)}
+                    sx={{
+                      position: "absolute",
+                      top: -4,
+                      right: -4,
+                      bgcolor: "#ef4444",
+                      color: "white",
+                      width: 24,
+                      height: 24,
+                      boxShadow: 2,
+                      "&:hover": {
+                        bgcolor: "#dc2626",
+                      },
+                    }}
+                  >
+                    <CloseIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Box>
+              ) : (
+                <Box>
+                  <AddPhotoAlternateOutlinedIcon
+                    sx={{
+                      fontSize: { xs: 36, sm: 40 },
+                      color: "text.secondary",
+                      mb: 1,
+                    }}
+                  />
+                </Box>
+              )}
+
+              {/* Upload Button and Info */}
+              <Box>
+                <Button
+                  variant="contained"
+                  component="label"
                   size="small"
-                  onClick={() => handleRemove(onChange)}
                   sx={{
-                    position: "absolute",
-                    top: -4,
-                    right: -4,
-                    bgcolor: "#ef4444",
+                    backgroundColor: "#171717",
                     color: "white",
-                    width: 24,
-                    height: 24,
-                    boxShadow: 2,
+                    textTransform: "none",
+                    px: 1.5,
+                    py: 0.5,
                     "&:hover": {
-                      bgcolor: "#dc2626",
+                      backgroundColor: "#333",
                     },
                   }}
                 >
-                  <CloseIcon sx={{ fontSize: 16 }} />
-                </IconButton>
+                  {preview && value !== "DELETE_IMAGE"
+                    ? "Change Image"
+                    : "Choose Image"}
+                  <input
+                    type="file"
+                    hidden
+                    id={name}
+                    data-testid="file-upload-input"
+                    accept={accept}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      handleFileChange(file || null, onChange);
+                    }}
+                  />
+                </Button>
+
+                {/* File info */}
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 0.5, fontSize: "0.7rem" }}
+                >
+                  {isFile(value)
+                    ? `Selected: ${value.name}`
+                    : value === "DELETE_IMAGE"
+                    ? "Image will be removed"
+                    : preview && !preview.startsWith("blob:")
+                    ? "Current image"
+                    : `Max file size: ${maxSize}MB`}
+                </Typography>
+
+                {/* Supported formats */}
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 0.25, fontSize: "0.65rem" }}
+                >
+                  Supported: JPG, PNG
+                </Typography>
               </Box>
-            ) : (
-              <Box>
-                <AddPhotoAlternateOutlinedIcon
-                  sx={{
-                    fontSize: { xs: 36, sm: 40 },
-                    color: "text.secondary",
-                    mb: 1,
-                  }}
-                />
-              </Box>
-            )}
-
-            {/* Upload Button and Info */}
-            <Box>
-              <Button
-                variant="contained"
-                component="label"
-                size="small"
-                sx={{
-                  backgroundColor: "#171717",
-                  color: "white",
-                  textTransform: "none",
-                  px: 1.5,
-                  py: 0.5,
-                  "&:hover": {
-                    backgroundColor: "#333",
-                  },
-                }}
-              >
-                {preview && value !== "DELETE_IMAGE"
-                  ? "Change Image"
-                  : "Choose Image"}
-                <input
-                  type="file"
-                  hidden
-                  id={name}
-                  data-testid="file-upload-input"
-                  accept={accept}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    handleFileChange(file || null, onChange);
-                  }}
-                />
-              </Button>
-
-              {/* File info */}
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", mt: 0.5,fontSize:"0.7rem" }}
-              >
-                {isFile(value)
-                  ? `Selected: ${value.name}`
-                  : value === "DELETE_IMAGE"
-                  ? "Image will be removed"
-                  : preview && !preview.startsWith("blob:")
-                  ? "Current image"
-                  : `Max file size: ${maxSize}MB`}
-              </Typography>
-
-              {/* Supported formats */}
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", mt: 0.25,fontSize:"0.65rem" }}
-              >
-                Supported: JPG, PNG
-              </Typography>
             </Box>
-          </Box>
 
-          {/* Error Message */}
-          {error && (
-            <Typography
-              color="error"
-              variant="caption"
-              sx={{ display: "block", mt: 1, ml: 0.5 }}
-            >
-              {error.message || "Please upload an image"}
-            </Typography>
-          )}
-        </Box>
-      )}
-    />
+            {/* Error Message */}
+            {error && (
+              <Typography
+                color="error"
+                variant="caption"
+                sx={{ display: "block", mt: 1, ml: 0.5 }}
+              >
+                {error.message || "Please upload an image"}
+              </Typography>
+            )}
+          </Box>
+        )}
+      />
+    </FileUploadErrorBoundary>
   );
 };
 

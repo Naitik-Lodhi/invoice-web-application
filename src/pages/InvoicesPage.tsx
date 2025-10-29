@@ -25,6 +25,7 @@ import { exportInvoicesToExcel } from "../utils/exportData";
 import { useAuth } from "../context/AuthContext";
 import { invoiceService } from "../services/invoiceService";
 import { toast } from "../utils/toast";
+import { InvoiceErrorBoundary } from "../error/ErrorBoundary";
 
 // Interfaces
 interface ListData {
@@ -71,10 +72,10 @@ const getDateRange = (
       from = today.startOf("year").format("YYYY-MM-DD");
       to = today.endOf("year").format("YYYY-MM-DD");
       break;
-     case "Custom":
-      if (customRange?.start) { 
+    case "Custom":
+      if (customRange?.start) {
         from = customRange.start.format("YYYY-MM-DD");
-        to = customRange.end 
+        to = customRange.end
           ? customRange.end.format("YYYY-MM-DD")
           : today.format("YYYY-MM-DD");
       }
@@ -340,8 +341,8 @@ const InvoicesPage = () => {
 
     setError(null);
     setIsLoadingList(true);
-    
-     try {
+
+    try {
       let listDataWithCounts;
 
       // ✅ If no filter, fetch all
@@ -352,7 +353,10 @@ const InvoicesPage = () => {
         // ✅ Apply filter
         const { from, to } = getDateRange(filterToUse, customDateRange);
         console.log("📊 Fetching filtered invoices:", { from, to });
-        listDataWithCounts = await invoiceService.getListWithItemCounts(from, to);
+        listDataWithCounts = await invoiceService.getListWithItemCounts(
+          from,
+          to
+        );
       }
 
       console.log("📊 Invoice List Received:", listDataWithCounts?.length);
@@ -403,7 +407,7 @@ const InvoicesPage = () => {
     }
   }, [globalFilter, customDateRange]);
 
-   // ✅ Re-fetch when local filter changes
+  // ✅ Re-fetch when local filter changes
   useEffect(() => {
     if (shouldApplyFilter) {
       console.log("🔄 Local filter changed - re-fetching");
@@ -447,81 +451,86 @@ const InvoicesPage = () => {
 
   return (
     <>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-          All Invoices
-        </Typography>
-
-        <Box sx={{ mb: 2 }}>
-          <ActionBar
-            searchText={gridSearchText}
-            onSearchChange={setGridSearchText}
-            onNewInvoice={handleNewInvoice}
-            isNewButtonDisabled={isLoadingList}
-            onExport={handleExport}
-            columns={columnVisibility}
-            onColumnVisibilityChange={handleColumnVisibilityChange}
-            totalRecords={filteredInvoices.length}
-            buttonName="New Invoice"
-            searchBarPlaceholder="Search invoices..."
-            isExportDisabled={filteredInvoices.length === 0 || isLoadingList}
-          />
-        </Box>
-
-        <Box sx={{ width: "100%" }}>
-          <InvoiceDataGrid
-            invoices={filteredInvoices}
-            visibleColumns={columnVisibility
-              .filter((c) => c.visible)
-              .map((c) => c.field)}
-            onEdit={handleEditInvoice}
-            onPrint={handlePrintInvoice}
-            onDelete={handleDeleteInvoice}
-            loading={isLoadingList}
-            searchText={gridSearchText}
-            companyCurrency={companyCurrency}
-            onPrintMultiple={handlePrintMultiple}
-            enableSelection={true}
-          />
-        </Box>
-      </Box>
-
-      <InvoiceEditor
-        open={editorOpen}
-        mode={editorMode}
-        invoiceId={editingInvoiceId}
-        onClose={handleCloseEditor}
-        onSave={handleSaveInvoice}
-        companyCurrency={companyCurrency}
-        nextInvoiceNumber={nextInvoiceNumber}
-      />
-
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle sx={{ fontWeight: 600 }}>Delete Invoice</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete this invoice? This action cannot be
-            undone.
+      <InvoiceErrorBoundary>
+        <Box sx={{ p: { xs: 2, sm: 3 } }}>
+          <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
+            All Invoices
           </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined">
-            Cancel
-          </Button>
-          <Button
-            onClick={confirmDelete}
-            variant="contained"
-            sx={{ bgcolor: "#ef4444", "&:hover": { bgcolor: "#dc2626" } }}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+
+          <Box sx={{ mb: 2 }}>
+            <ActionBar
+              searchText={gridSearchText}
+              onSearchChange={setGridSearchText}
+              onNewInvoice={handleNewInvoice}
+              isNewButtonDisabled={isLoadingList}
+              onExport={handleExport}
+              columns={columnVisibility}
+              onColumnVisibilityChange={handleColumnVisibilityChange}
+              totalRecords={filteredInvoices.length}
+              buttonName="New Invoice"
+              searchBarPlaceholder="Search invoices..."
+              isExportDisabled={filteredInvoices.length === 0 || isLoadingList}
+            />
+          </Box>
+
+          <Box sx={{ width: "100%" }}>
+            <InvoiceDataGrid
+              invoices={filteredInvoices}
+              visibleColumns={columnVisibility
+                .filter((c) => c.visible)
+                .map((c) => c.field)}
+              onEdit={handleEditInvoice}
+              onPrint={handlePrintInvoice}
+              onDelete={handleDeleteInvoice}
+              loading={isLoadingList}
+              searchText={gridSearchText}
+              companyCurrency={companyCurrency}
+              onPrintMultiple={handlePrintMultiple}
+              enableSelection={true}
+            />
+          </Box>
+        </Box>
+
+        <InvoiceEditor
+          open={editorOpen}
+          mode={editorMode}
+          invoiceId={editingInvoiceId}
+          onClose={handleCloseEditor}
+          onSave={handleSaveInvoice}
+          companyCurrency={companyCurrency}
+          nextInvoiceNumber={nextInvoiceNumber}
+        />
+
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle sx={{ fontWeight: 600 }}>Delete Invoice</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to delete this invoice? This action cannot
+              be undone.
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, gap: 1 }}>
+            <Button
+              onClick={() => setDeleteDialogOpen(false)}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmDelete}
+              variant="contained"
+              sx={{ bgcolor: "#ef4444", "&:hover": { bgcolor: "#dc2626" } }}
+            >
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </InvoiceErrorBoundary>
     </>
   );
 };

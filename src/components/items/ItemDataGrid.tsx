@@ -19,6 +19,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import type { Item, ItemDataGridProps } from "../../types/itemTypes";
 import { itemService } from "../../services/itemService";
+import { DataGridErrorBoundary } from "../../error/ErrorBoundary";
 
 const ItemDataGrid = ({
   items,
@@ -130,8 +131,8 @@ const ItemDataGrid = ({
                 height: isMobile ? 32 : 50,
                 bgcolor: pictureUrl ? "transparent" : "primary.light",
                 opacity: isLoading ? 0.5 : 1,
-                mt:1,
-                mb:1
+                mt: 1,
+                mb: 1,
               }}
             >
               {!pictureUrl && initials}
@@ -154,7 +155,7 @@ const ItemDataGrid = ({
                     fontSize: "0.75rem",
                     color: "#171717",
                     lineHeight: 1.2,
-                    mt:3
+                    mt: 3,
                   }}
                 >
                   {params.row.itemName}
@@ -167,7 +168,7 @@ const ItemDataGrid = ({
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
                     maxWidth: "100%",
-                    mt:2
+                    mt: 2,
                   }}
                 >
                   {truncateText(params.row.description || "", 30)}
@@ -182,8 +183,8 @@ const ItemDataGrid = ({
                 fontWeight: 700,
                 color: "#171717",
                 fontSize: isTablet ? "0.8rem" : "0.875rem",
-                textAlign:"left",
-                mt:2.5
+                textAlign: "left",
+                mt: 2.5,
               }}
             >
               {params.row.itemName}
@@ -217,7 +218,7 @@ const ItemDataGrid = ({
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
                   cursor: description.length > maxLength ? "help" : "default",
-                  mt:2.5
+                  mt: 2.5,
                 }}
               >
                 {truncateText(description, maxLength)}
@@ -239,7 +240,7 @@ const ItemDataGrid = ({
               fontWeight: 600,
               fontSize: isTablet ? "0.8rem" : "0.875rem",
               color: "#171717",
-              mt:2.5
+              mt: 2.5,
             }}
           >
             {formatCurrency(params.row.salesRate)}
@@ -265,7 +266,7 @@ const ItemDataGrid = ({
                 fontSize: isTablet ? "0.8rem" : "0.875rem",
                 color: discount > 0 ? "#059669" : "#666",
                 fontWeight: discount > 0 ? 600 : 400,
-                mt:2.5
+                mt: 2.5,
               }}
             >
               {displayValue}%
@@ -322,46 +323,48 @@ const ItemDataGrid = ({
   ]);
 
   return (
-    <Box
-      sx={{
-        height: "100%",
-        width: "100%",
-        "& .MuiDataGrid-root": {
-          border: "none",
-          fontSize: isMobile ? "0.7rem" : "0.875rem",
-          "& .MuiDataGrid-cell": {
-            borderBottom: "1px solid #f0f0f0",
-          },
-          "& .MuiDataGrid-columnHeaders": {
-            backgroundColor: "#fafafa",
-            borderBottom: "2px solid #e0e0e0",
-          },
-          "& .MuiDataGrid-footerContainer": {
-            borderTop: "2px solid #e0e0e0",
-            backgroundColor: "#fafafa",
-          },
-        },
-      }}
-    >
-      <DataGrid
-        rows={items}
-        columns={columns}
-        loading={loading}
-        getRowId={(row) => row.itemID}
-        paginationModel={paginationModel}
-        onPaginationModelChange={setPaginationModel}
-        // pageSizeOptions={isMobile ? [5, 10, 25] : [10, 25, 50, 100]}
-        disableRowSelectionOnClick
-        autoHeight={false}
-        density={isMobile ? "compact" : "comfortable"}
-        rowHeight={isMobile ? 60 : 62}
-        disableColumnMenu
-        disableColumnSelector
+    <DataGridErrorBoundary>
+      <Box
         sx={{
-          textAlign:"center"
+          height: "100%",
+          width: "100%",
+          "& .MuiDataGrid-root": {
+            border: "none",
+            fontSize: isMobile ? "0.7rem" : "0.875rem",
+            "& .MuiDataGrid-cell": {
+              borderBottom: "1px solid #f0f0f0",
+            },
+            "& .MuiDataGrid-columnHeaders": {
+              backgroundColor: "#fafafa",
+              borderBottom: "2px solid #e0e0e0",
+            },
+            "& .MuiDataGrid-footerContainer": {
+              borderTop: "2px solid #e0e0e0",
+              backgroundColor: "#fafafa",
+            },
+          },
         }}
-      />
-    </Box>
+      >
+        <DataGrid
+          rows={items}
+          columns={columns}
+          loading={loading}
+          getRowId={(row) => row.itemID}
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
+          // pageSizeOptions={isMobile ? [5, 10, 25] : [10, 25, 50, 100]}
+          disableRowSelectionOnClick
+          autoHeight={false}
+          density={isMobile ? "compact" : "comfortable"}
+          rowHeight={isMobile ? 60 : 62}
+          disableColumnMenu
+          disableColumnSelector
+          sx={{
+            textAlign: "center",
+          }}
+        />
+      </Box>
+    </DataGridErrorBoundary>
   );
 };
 

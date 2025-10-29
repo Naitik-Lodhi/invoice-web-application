@@ -11,6 +11,7 @@ import {
 import SignupForm from "../../components/form/SignupForm";
 import { toast } from "../../utils/toast";
 import type { SignupData } from "../../services/authService";
+import { AuthErrorBoundary } from "../../error/ErrorBoundary";
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -104,13 +105,15 @@ const SignupPage = () => {
   };
 
   return (
-    <SignupForm
-      control={control}
-      isSubmitting={isSubmitting}
-      onSubmit={handleSubmit(onSubmit)}
-      error={apiError}
-      errors={errors}
-    />
+    <AuthErrorBoundary>
+      <SignupForm
+        control={control}
+        isSubmitting={isSubmitting}
+        onSubmit={handleSubmit(onSubmit)}
+        error={apiError}
+        errors={errors}
+      />
+    </AuthErrorBoundary>
   );
 };
 

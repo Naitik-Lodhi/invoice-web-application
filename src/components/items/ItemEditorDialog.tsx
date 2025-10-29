@@ -22,6 +22,7 @@ import FileUploadField from "../form/FileUploadField";
 import FormField from "../form/FormField";
 import { itemService } from "../../services/itemService";
 import { toast } from "../../utils/toast";
+import { FormErrorBoundary } from "../../error/ErrorBoundary";
 
 const ItemEditorDialog = ({
   open,
@@ -178,240 +179,242 @@ const ItemEditorDialog = ({
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-      fullScreen={isMobile}
-    >
-      <AppBar
-        sx={{
-          position: "relative",
-          backgroundColor: "white",
-          color: "black",
-          boxShadow: 1,
-        }}
+    <FormErrorBoundary>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={isMobile}
       >
-        <Toolbar>
-          <Typography variant="h6" sx={{ flex: 1, fontWeight: 600 }}>
-            {mode === "new" ? "New Item" : "Edit Item"}
-          </Typography>
-          <IconButton
-            edge="end"
-            color="inherit"
-            onClick={handleClose}
-            aria-label="close"
-            disabled={isSubmitting}
-          >
-            <CloseIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+        <AppBar
+          sx={{
+            position: "relative",
+            backgroundColor: "white",
+            color: "black",
+            boxShadow: 1,
+          }}
+        >
+          <Toolbar>
+            <Typography variant="h6" sx={{ flex: 1, fontWeight: 600 }}>
+              {mode === "new" ? "New Item" : "Edit Item"}
+            </Typography>
+            <IconButton
+              edge="end"
+              color="inherit"
+              onClick={handleClose}
+              aria-label="close"
+              disabled={isSubmitting}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Toolbar>
+        </AppBar>
 
-      <DialogContent sx={{ p: { xs: 2, sm: 3 }, backgroundColor: "#fafafa" }}>
-        {isLoadingData ? (
-          <Box sx={{ display: "flex", justifyContent: "center" }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Box
-            component="form"
-            onSubmit={handleSubmit(onSubmit)}
-            sx={{ maxWidth: 600, mx: "auto" }}
-          >
-            {/* Picture Upload */}
-            <FileUploadField
-              name="itemPicture"
-              control={control}
-              label="Picture"
-              existingImageUrl={existingImageUrl}
-              onImageRemove={handleImageRemove}
-            />
+        <DialogContent sx={{ p: { xs: 2, sm: 3 }, backgroundColor: "#fafafa" }}>
+          {isLoadingData ? (
+            <Box sx={{ display: "flex", justifyContent: "center" }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Box
+              component="form"
+              onSubmit={handleSubmit(onSubmit)}
+              sx={{ maxWidth: 600, mx: "auto" }}
+            >
+              {/* Picture Upload */}
+              <FileUploadField
+                name="itemPicture"
+                control={control}
+                label="Picture"
+                existingImageUrl={existingImageUrl}
+                onImageRemove={handleImageRemove}
+              />
 
-            {/* Item Name */}
-            <FormField
-              name="itemName"
-              control={control}
-              label="Item Name"
-              type="text"
-              placeholder="Enter item name"
-              required
-              maxLength={50}
-              rules={{
-                required: "Item name is required",
-                validate: (value: string) =>
-                  value?.trim().length > 0 || "Item name cannot be empty",
-              }}
-            />
+              {/* Item Name */}
+              <FormField
+                name="itemName"
+                control={control}
+                label="Item Name"
+                type="text"
+                placeholder="Enter item name"
+                required
+                maxLength={50}
+                rules={{
+                  required: "Item name is required",
+                  validate: (value: string) =>
+                    value?.trim().length > 0 || "Item name cannot be empty",
+                }}
+              />
 
-            {/* Description */}
-            <FormField
-              name="description"
-              control={control}
-              label="Description"
-              placeholder="Enter item description"
-              rows={2}
-              maxLength={500}
-            />
+              {/* Description */}
+              <FormField
+                name="description"
+                control={control}
+                label="Description"
+                placeholder="Enter item description"
+                rows={2}
+                maxLength={500}
+              />
 
-            {/* Sale Rate and Discount */}
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormField
-                  name="saleRate"
-                  control={control}
-                  label="Sale Rate"
-                  type="number"
-                  placeholder="0.00"
-                  required
-                  rules={{
-                    required: "Sale rate is required",
-                    validate: (value: number) => {
-                      const num = Number(value);
-                      if (isNaN(num)) return "Please enter a valid number";
-                      if (num < 0) return "Sale rate must be greater than 0";
-                      return true;
-                    },
-                  }}
-                />
+              {/* Sale Rate and Discount */}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FormField
+                    name="saleRate"
+                    control={control}
+                    label="Sale Rate"
+                    type="number"
+                    placeholder="0.00"
+                    required
+                    rules={{
+                      required: "Sale rate is required",
+                      validate: (value: number) => {
+                        const num = Number(value);
+                        if (isNaN(num)) return "Please enter a valid number";
+                        if (num < 0) return "Sale rate must be greater than 0";
+                        return true;
+                      },
+                    }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FormField
+                    name="discountPct"
+                    control={control}
+                    label="Discount %"
+                    type="number"
+                    placeholder="0.00"
+                    rules={{
+                      min: {
+                        value: 0,
+                        message: "Discount must be 0 or greater",
+                      },
+                      max: {
+                        value: 100,
+                        message: "Discount cannot exceed 100%",
+                      },
+                      validate: (value: any) => {
+                        const num = Number(value);
+                        if (isNaN(num)) return "Please enter a valid number";
+                        if (num < 0) return "Discount must be 0 or greater";
+                        if (num > 100) return "Discount cannot exceed 100%";
+                        return true;
+                      },
+                    }}
+                  />
+                </Grid>
               </Grid>
 
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormField
-                  name="discountPct"
-                  control={control}
-                  label="Discount %"
-                  type="number"
-                  placeholder="0.00"
-                  rules={{
-                    min: {
-                      value: 0,
-                      message: "Discount must be 0 or greater",
-                    },
-                    max: {
-                      value: 100,
-                      message: "Discount cannot exceed 100%",
-                    },
-                    validate: (value: any) => {
-                      const num = Number(value);
-                      if (isNaN(num)) return "Please enter a valid number";
-                      if (num < 0) return "Discount must be 0 or greater";
-                      if (num > 100) return "Discount cannot exceed 100%";
-                      return true;
-                    },
+              {/* Duplicate Name Error Alert */}
+              {saveError && !concurrencyError && (
+                <Box
+                  sx={{
+                    mt: 2,
+                    p: 2,
+                    bgcolor: "#fee2e2",
+                    borderRadius: 1,
+                    border: "1px solid #ef4444",
                   }}
-                />
-              </Grid>
-            </Grid>
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 600, color: "#991b1b", mb: 1 }}
+                  >
+                    ⚠️ Error
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "#991b1b" }}>
+                    {saveError}
+                  </Typography>
+                </Box>
+              )}
 
-            {/* Duplicate Name Error Alert */}
-            {saveError && !concurrencyError && (
+              {/* Concurrency Error Alert */}
+              {concurrencyError && (
+                <Box
+                  sx={{
+                    mt: 2,
+                    p: 2,
+                    bgcolor: "#fee2e2",
+                    borderRadius: 1,
+                    border: "1px solid #ef4444",
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 600, color: "#991b1b", mb: 1 }}
+                  >
+                    ⚠️ Concurrency Conflict
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "#991b1b", mb: 2 }}>
+                    This item was modified by another user. Please reload and
+                    try again.
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleClose}
+                    sx={{
+                      borderColor: "#ef4444",
+                      color: "#ef4444",
+                      "&:hover": {
+                        borderColor: "#dc2626",
+                        bgcolor: "rgba(239, 68, 68, 0.04)",
+                      },
+                      textTransform: "none",
+                    }}
+                  >
+                    Close
+                  </Button>
+                </Box>
+              )}
+
+              {/* Action Buttons */}
               <Box
                 sx={{
-                  mt: 2,
-                  p: 2,
-                  bgcolor: "#fee2e2",
-                  borderRadius: 1,
-                  border: "1px solid #ef4444",
+                  display: "flex",
+                  gap: 2,
+                  justifyContent: "flex-end",
+                  flexDirection: isMobile ? "column-reverse" : "row",
                 }}
               >
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: 600, color: "#991b1b", mb: 1 }}
-                >
-                  ⚠️ Error
-                </Typography>
-                <Typography variant="body2" sx={{ color: "#991b1b" }}>
-                  {saveError}
-                </Typography>
-              </Box>
-            )}
-
-            {/* Concurrency Error Alert */}
-            {concurrencyError && (
-              <Box
-                sx={{
-                  mt: 2,
-                  p: 2,
-                  bgcolor: "#fee2e2",
-                  borderRadius: 1,
-                  border: "1px solid #ef4444",
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: 600, color: "#991b1b", mb: 1 }}
-                >
-                  ⚠️ Concurrency Conflict
-                </Typography>
-                <Typography variant="body2" sx={{ color: "#991b1b", mb: 2 }}>
-                  This item was modified by another user. Please reload and try
-                  again.
-                </Typography>
                 <Button
                   variant="outlined"
-                  size="small"
                   onClick={handleClose}
+                  disabled={isSubmitting}
+                  fullWidth={isMobile}
+                  sx={{ textTransform: "none" }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={!isFormValid}
+                  startIcon={
+                    isSubmitting ? <CircularProgress size={20} /> : <SaveIcon />
+                  }
+                  fullWidth={isMobile}
                   sx={{
-                    borderColor: "#ef4444",
-                    color: "#ef4444",
-                    "&:hover": {
-                      borderColor: "#dc2626",
-                      bgcolor: "rgba(239, 68, 68, 0.04)",
+                    bgcolor: "black",
+                    "&:hover": { bgcolor: "#333" },
+                    "&:disabled": {
+                      bgcolor: "#e0e0e0",
+                      color: "#9e9e9e",
                     },
                     textTransform: "none",
+                    py: 1.5,
                   }}
                 >
-                  Close
+                  {isSubmitting ? "Saving..." : "Save"}
                 </Button>
               </Box>
-            )}
-
-            {/* Action Buttons */}
-            <Box
-              sx={{
-                display: "flex",
-                gap: 2,
-                justifyContent: "flex-end",
-                flexDirection: isMobile ? "column-reverse" : "row",
-              }}
-            >
-              <Button
-                variant="outlined"
-                onClick={handleClose}
-                disabled={isSubmitting}
-                fullWidth={isMobile}
-                sx={{ textTransform: "none" }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={!isFormValid}
-                startIcon={
-                  isSubmitting ? <CircularProgress size={20} /> : <SaveIcon />
-                }
-                fullWidth={isMobile}
-                sx={{
-                  bgcolor: "black",
-                  "&:hover": { bgcolor: "#333" },
-                  "&:disabled": {
-                    bgcolor: "#e0e0e0",
-                    color: "#9e9e9e",
-                  },
-                  textTransform: "none",
-                  py: 1.5,
-                }}
-              >
-                {isSubmitting ? "Saving..." : "Save"}
-              </Button>
             </Box>
-          </Box>
-        )}
-      </DialogContent>
-    </Dialog>
+          )}
+        </DialogContent>
+      </Dialog>
+    </FormErrorBoundary>
   );
 };
 

@@ -25,6 +25,7 @@ import PrintIcon from "@mui/icons-material/Print";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PrintAllIcon from "@mui/icons-material/PrintOutlined";
 import { format } from "date-fns";
+import { DataGridErrorBoundary } from "../../error/ErrorBoundary";
 
 interface InvoiceItem {
   name: string;
@@ -105,7 +106,7 @@ const InvoiceDataGrid = ({
     if (selectedIds.size === invoices.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(invoices.map(inv => inv.id)));
+      setSelectedIds(new Set(invoices.map((inv) => inv.id)));
     }
   };
 
@@ -164,7 +165,7 @@ const InvoiceDataGrid = ({
               fontSize: isMobile ? "0.75rem" : isTablet ? "0.8rem" : "0.875rem",
               color: "#171717",
               cursor: !isMobile ? "pointer" : undefined,
-              mt:2.5,
+              mt: 2.5,
               "&:hover": !isMobile
                 ? { color: "#000", textDecoration: "underline" }
                 : undefined,
@@ -194,7 +195,7 @@ const InvoiceDataGrid = ({
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
-               mt:2.5,
+              mt: 2.5,
             }}
           >
             {isMobile && params.value?.length > 15
@@ -299,7 +300,7 @@ const InvoiceDataGrid = ({
               fontWeight: 600,
               fontSize: isMobile ? "0.75rem" : isTablet ? "0.85rem" : "0.95rem",
               color: "#171717",
-               mt:2.5,
+              mt: 2.5,
             }}
           >
             {formatCurrency(params.row.total || 0)}
@@ -368,8 +369,12 @@ const InvoiceDataGrid = ({
         disableColumnMenu: true,
         renderHeader: () => (
           <Checkbox
-            checked={selectedIds.size === invoices.length && invoices.length > 0}
-            indeterminate={selectedIds.size > 0 && selectedIds.size < invoices.length}
+            checked={
+              selectedIds.size === invoices.length && invoices.length > 0
+            }
+            indeterminate={
+              selectedIds.size > 0 && selectedIds.size < invoices.length
+            }
             onChange={handleSelectAll}
             size="small"
           />
@@ -386,9 +391,9 @@ const InvoiceDataGrid = ({
       // Return checkbox column first, then visible columns
       return [
         checkboxColumn,
-        ...visibleColumns
+        ...(visibleColumns
           .map((field) => baseColumns[field])
-          .filter(Boolean) as GridColDef[]
+          .filter(Boolean) as GridColDef[]),
       ];
     }
 
@@ -432,169 +437,177 @@ const InvoiceDataGrid = ({
     }
   };
 
-  const showSelection = enableSelection && onPrintMultiple && invoices.length > 0;
+  const showSelection =
+    enableSelection && onPrintMultiple && invoices.length > 0;
 
   return (
-    <Box>
-      {/* Print Selected Button */}
-      {showSelection && selectedIds.size > 0 && (
-        <Box 
-          sx={{ 
-            mb: 2, 
-            p: 2,
-            bgcolor: '#f5f5f5',
-            borderRadius: 1,
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center' 
-          }}
-        >
-          <Typography variant="body1" sx={{ color: '#333', fontWeight: 500 }}>
-            {selectedIds.size} invoice{selectedIds.size > 1 ? 's' : ''} selected
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<PrintAllIcon />}
-            onClick={handlePrintSelected}
-            size={isMobile ? "small" : "medium"}
+    <DataGridErrorBoundary>
+      <Box>
+        {/* Print Selected Button */}
+        {showSelection && selectedIds.size > 0 && (
+          <Box
             sx={{
-              bgcolor: '#667eea',
-              '&:hover': { bgcolor: '#5a67d8' },
-              textTransform: 'none',
+              mb: 2,
+              p: 2,
+              bgcolor: "#f5f5f5",
+              borderRadius: 1,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
-            Print Selected ({selectedIds.size})
-          </Button>
-        </Box>
-      )}
+            <Typography variant="body1" sx={{ color: "#333", fontWeight: 500 }}>
+              {selectedIds.size} invoice{selectedIds.size > 1 ? "s" : ""}{" "}
+              selected
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<PrintAllIcon />}
+              onClick={handlePrintSelected}
+              size={isMobile ? "small" : "medium"}
+              sx={{
+                bgcolor: "#667eea",
+                "&:hover": { bgcolor: "#5a67d8" },
+                textTransform: "none",
+              }}
+            >
+              Print Selected ({selectedIds.size})
+            </Button>
+          </Box>
+        )}
 
-      <Box
-        sx={{
-          minHeight: 300,
-          maxHeight: isMobile ? 600 : 800,
-          width: "100%",
-          overflowX: needsHorizontalScroll ? "auto" : "hidden",
-          "& .MuiDataGrid-root": {
-            border: "none",
-            fontSize: isMobile ? "0.7rem" : isTablet ? "0.8rem" : "0.875rem",
+        <Box
+          sx={{
+            minHeight: 300,
+            maxHeight: isMobile ? 600 : 800,
             width: "100%",
-            "& .MuiDataGrid-cell": {
-              borderBottom: "1px solid #f0f0f0",
-              padding: isMobile ? "0 6px" : isTablet ? "0 8px" : "0 12px",
-            },
-            "& .MuiDataGrid-columnHeaders": {
-              backgroundColor: "#fafafa",
-              borderBottom: "2px solid #e0e0e0",
-              minHeight: isMobile
-                ? "40px !important"
-                : isTablet
-                ? "48px !important"
-                : "56px !important",
-              "& .MuiDataGrid-columnHeader": {
-                fontWeight: 600,
-                fontSize: isMobile ? "0.7rem" : isTablet ? "0.75rem" : "0.875rem",
+            overflowX: needsHorizontalScroll ? "auto" : "hidden",
+            "& .MuiDataGrid-root": {
+              border: "none",
+              fontSize: isMobile ? "0.7rem" : isTablet ? "0.8rem" : "0.875rem",
+              width: "100%",
+              "& .MuiDataGrid-cell": {
+                borderBottom: "1px solid #f0f0f0",
                 padding: isMobile ? "0 6px" : isTablet ? "0 8px" : "0 12px",
-                "& .MuiDataGrid-columnHeaderTitle": {
+              },
+              "& .MuiDataGrid-columnHeaders": {
+                backgroundColor: "#fafafa",
+                borderBottom: "2px solid #e0e0e0",
+                minHeight: isMobile
+                  ? "40px !important"
+                  : isTablet
+                  ? "48px !important"
+                  : "56px !important",
+                "& .MuiDataGrid-columnHeader": {
+                  fontWeight: 600,
                   fontSize: isMobile
                     ? "0.7rem"
                     : isTablet
                     ? "0.75rem"
                     : "0.875rem",
-                  fontWeight: 600,
-                  whiteSpace: "normal",
-                  lineHeight: "1.2",
-                  overflow: "visible",
+                  padding: isMobile ? "0 6px" : isTablet ? "0 8px" : "0 12px",
+                  "& .MuiDataGrid-columnHeaderTitle": {
+                    fontSize: isMobile
+                      ? "0.7rem"
+                      : isTablet
+                      ? "0.75rem"
+                      : "0.875rem",
+                    fontWeight: 600,
+                    whiteSpace: "normal",
+                    lineHeight: "1.2",
+                    overflow: "visible",
+                  },
+                },
+                "& .MuiDataGrid-columnSeparator": {
+                  display: isMobile ? "none" : "flex",
                 },
               },
-              "& .MuiDataGrid-columnSeparator": {
-                display: isMobile ? "none" : "flex",
+              "& .MuiDataGrid-virtualScroller": {
+                backgroundColor: "#fff",
               },
-            },
-            "& .MuiDataGrid-virtualScroller": {
-              backgroundColor: "#fff",
-            },
-            "& .MuiDataGrid-footerContainer": {
-              borderTop: "2px solid #e0e0e0",
-              backgroundColor: "#fafafa",
-              minHeight: isMobile ? "40px !important" : "52px !important",
-              "& .MuiTablePagination-root": {
-                width: "100%",
-              },
-              "& .MuiTablePagination-toolbar": {
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingLeft: isMobile ? "8px" : "16px",
-                paddingRight: isMobile ? "8px" : "16px",
-                minHeight: isMobile ? "40px" : "52px",
-              },
-              "& .MuiTablePagination-spacer": {
-                display: "none",
-              },
-              "& .MuiTablePagination-displayedRows": {
-                fontSize: isMobile ? "0.7rem" : "0.875rem",
-                margin: 0,
-                marginLeft: "auto",
-              },
-              "& .MuiTablePagination-selectLabel": {
-                fontSize: isMobile ? "0.7rem" : "0.875rem",
-                margin: 0,
-                marginRight: "8px",
-              },
-              "& .MuiTablePagination-select": {
-                fontSize: isMobile ? "0.7rem" : "0.875rem",
-                paddingRight: "24px",
-              },
-              "& .MuiTablePagination-actions": {
-                marginLeft: isMobile ? "8px" : "20px",
-                "& .MuiIconButton-root": {
-                  padding: isMobile ? "4px" : "8px",
-                },
-              },
-            },
-            "& .MuiDataGrid-row": {
-              "&:hover": {
+              "& .MuiDataGrid-footerContainer": {
+                borderTop: "2px solid #e0e0e0",
                 backgroundColor: "#fafafa",
+                minHeight: isMobile ? "40px !important" : "52px !important",
+                "& .MuiTablePagination-root": {
+                  width: "100%",
+                },
+                "& .MuiTablePagination-toolbar": {
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  paddingLeft: isMobile ? "8px" : "16px",
+                  paddingRight: isMobile ? "8px" : "16px",
+                  minHeight: isMobile ? "40px" : "52px",
+                },
+                "& .MuiTablePagination-spacer": {
+                  display: "none",
+                },
+                "& .MuiTablePagination-displayedRows": {
+                  fontSize: isMobile ? "0.7rem" : "0.875rem",
+                  margin: 0,
+                  marginLeft: "auto",
+                },
+                "& .MuiTablePagination-selectLabel": {
+                  fontSize: isMobile ? "0.7rem" : "0.875rem",
+                  margin: 0,
+                  marginRight: "8px",
+                },
+                "& .MuiTablePagination-select": {
+                  fontSize: isMobile ? "0.7rem" : "0.875rem",
+                  paddingRight: "24px",
+                },
+                "& .MuiTablePagination-actions": {
+                  marginLeft: isMobile ? "8px" : "20px",
+                  "& .MuiIconButton-root": {
+                    padding: isMobile ? "4px" : "8px",
+                  },
+                },
+              },
+              "& .MuiDataGrid-row": {
+                "&:hover": {
+                  backgroundColor: "#fafafa",
+                },
+              },
+              "& .MuiDataGrid-cell:focus": {
+                outline: "none",
+              },
+              "& .MuiDataGrid-columnHeader:focus": {
+                outline: "none",
+              },
+              "& .MuiDataGrid-actionsCell": {
+                gap: isMobile ? 0 : 0.5,
               },
             },
-            "& .MuiDataGrid-cell:focus": {
-              outline: "none",
-            },
-            "& .MuiDataGrid-columnHeader:focus": {
-              outline: "none",
-            },
-            "& .MuiDataGrid-actionsCell": {
-              gap: isMobile ? 0 : 0.5,
-            },
-          },
-        }}
-      >
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          loading={loading}
-          getRowId={(row) => row.id}
-          paginationModel={paginationModel}
-          onPaginationModelChange={setPaginationModel}
-          sortModel={sortModel}
-          onSortModelChange={setSortModel}
-          filterModel={filterModel}
-          onFilterModelChange={setFilterModel}
-          // pageSizeOptions={isMobile ? [5, 10, 25] : [10, 25, 50, 100]}
-          disableRowSelectionOnClick
-          autoHeight={true}
-          density={isMobile ? "compact" : "comfortable"}
-          rowHeight={isMobile ? 38 : isTablet ? 44 : 52}
-          columnHeaderHeight={isMobile ? 40 : isTablet ? 44 : 56}
-          disableColumnMenu
-          disableColumnSelector
-          // NO checkboxSelection prop
-          sx={{
-            fontSize: isMobile ? "0.7rem" : isTablet ? "0.8rem" : "0.875rem",
           }}
-        />
+        >
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            loading={loading}
+            getRowId={(row) => row.id}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
+            sortModel={sortModel}
+            onSortModelChange={setSortModel}
+            filterModel={filterModel}
+            onFilterModelChange={setFilterModel}
+            // pageSizeOptions={isMobile ? [5, 10, 25] : [10, 25, 50, 100]}
+            disableRowSelectionOnClick
+            autoHeight={true}
+            density={isMobile ? "compact" : "comfortable"}
+            rowHeight={isMobile ? 38 : isTablet ? 44 : 52}
+            columnHeaderHeight={isMobile ? 40 : isTablet ? 44 : 56}
+            disableColumnMenu
+            disableColumnSelector
+            // NO checkboxSelection prop
+            sx={{
+              fontSize: isMobile ? "0.7rem" : isTablet ? "0.8rem" : "0.875rem",
+            }}
+          />
+        </Box>
       </Box>
-    </Box>
+    </DataGridErrorBoundary>
   );
 };
 

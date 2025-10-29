@@ -21,6 +21,7 @@ import { useAuth } from "../context/AuthContext";
 import { itemService } from "../services/itemService";
 import { toast } from "../utils/toast";
 import axiosInstance from "../api/axiosInstance";
+import { ItemListErrorBoundary } from "../error/ErrorBoundary";
 
 const ItemListPage = () => {
   const theme = useTheme();
@@ -165,106 +166,111 @@ const ItemListPage = () => {
   };
 
   // ✅ FIXED: Handle save item with proper error handling and state update
- // src/pages/ItemListPage.tsx
-// Replace handleSaveItem function
+  // src/pages/ItemListPage.tsx
+  // Replace handleSaveItem function
 
-const handleSaveItem = async (data: ItemFormData) => {
-  try {
-    let itemID = editingItem?.itemID || 0;
-    let imageUploadSuccess = true;
+  const handleSaveItem = async (data: ItemFormData) => {
+    try {
+      let itemID = editingItem?.itemID || 0;
+      let imageUploadSuccess = true;
 
-    const itemData = {
-      itemName: data.itemName.trim(),
-      description: data.description?.trim() || "",
-      saleRate: data.saleRate,
-      discountPct: data.discountPct || 0,
-    };
+      const itemData = {
+        itemName: data.itemName.trim(),
+        description: data.description?.trim() || "",
+        saleRate: data.saleRate,
+        discountPct: data.discountPct || 0,
+      };
 
-    let response: any;
+      let response: any;
 
-    if (editorMode === "new") {
-      console.log("📤 Creating new item...", itemData);
-      response = await itemService.create(itemData);
-      
-      // ✅ FIXED: Get itemID from transformed response
-      itemID = response.itemID;
-      
-      console.log("✅ Item created with ID:", itemID);
-      
-      if (!itemID || itemID === 0) {
-        console.error("❌ Could not extract itemID");
-        await fetchItems();
-        toast.warning("Item created but couldn't upload image. Please edit to add image.");
-        handleCloseEditor();
-        return;
+      if (editorMode === "new") {
+        console.log("📤 Creating new item...", itemData);
+        response = await itemService.create(itemData);
+
+        // ✅ FIXED: Get itemID from transformed response
+        itemID = response.itemID;
+
+        console.log("✅ Item created with ID:", itemID);
+
+        if (!itemID || itemID === 0) {
+          console.error("❌ Could not extract itemID");
+          await fetchItems();
+          toast.warning(
+            "Item created but couldn't upload image. Please edit to add image."
+          );
+          handleCloseEditor();
+          return;
+        }
+      } else {
+        console.log("📤 Updating item ID:", itemID);
+        response = await itemService.update(itemID, {
+          ...itemData,
+          updatedOn: editingItem?.updatedOn || null,
+        });
+        console.log("✅ Item updated");
       }
-      
-    } else {
-      console.log("📤 Updating item ID:", itemID);
-      response = await itemService.update(itemID, {
-        ...itemData,
-        updatedOn: editingItem?.updatedOn || null,
-      });
-      console.log("✅ Item updated");
-    }
 
-    // ✅ Upload image if provided
-   if (data.imageRemoved && editorMode === "edit") {
-      console.log("🗑️ Removing image for item ID:", itemID);
-      
-      
-      try {
-        const formData = new FormData();
-        formData.append("ItemID", String(itemID));
-        formData.append("Picture", new Blob(), "");
+      // ✅ Upload image if provided
+      if (data.imageRemoved && editorMode === "edit") {
+        console.log("🗑️ Removing image for item ID:", itemID);
 
-        const uploadResponse = await axiosInstance.post(
-          "/Item/UpdateItemPicture", 
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
+        try {
+          const formData = new FormData();
+          formData.append("ItemID", String(itemID));
+          formData.append("Picture", new Blob(), "");
+
+          const uploadResponse = await axiosInstance.post(
+            "/Item/UpdateItemPicture",
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
+
+          console.log(
+            "✅ Image upload response:",
+            uploadResponse.status,
+            uploadResponse.data
+          );
+          console.log("✅ Image removed successfully");
+        } catch (picError: any) {
+          console.error("❌ Image upload failed:", picError);
+          imageUploadSuccess = false;
+          toast.error("Image upload failed. Item saved without image.");
+        }
+      }
+
+      // Refresh items
+      await fetchItems();
+
+      // Success message
+      toast.success(
+        editorMode === "new"
+          ? "Item created successfully"
+          : "Item updated successfully"
+      );
+
+      handleCloseEditor();
+    } catch (error: any) {
+      console.error("❌ Save error:", error);
+
+      const errorMessage =
+        error.response?.data?.error || error.response?.data || error.message;
+
+      if (error.response?.status === 409) {
+        throw new Error(
+          "Item name already exists. Please use a different name."
         );
-        
-        console.log("✅ Image upload response:", uploadResponse.status, uploadResponse.data);
-         console.log("✅ Image removed successfully");
-     } catch (picError: any) {
-        console.error("❌ Image upload failed:", picError);
-        imageUploadSuccess = false;
-        toast.error("Image upload failed. Item saved without image.");
+      } else if (error.response?.status === 412) {
+        throw new Error("Item was modified by another user. Please reload.");
       }
+
+      toast.error(errorMessage || "Failed to save item");
+      throw new Error(errorMessage || "Failed to save item");
     }
-
-    // Refresh items
-    await fetchItems();
-
-    // Success message
-    toast.success(
-      editorMode === "new"
-        ? "Item created successfully"
-        : "Item updated successfully"
-    );
-
-    handleCloseEditor();
-    
-  } catch (error: any) {
-    console.error("❌ Save error:", error);
-
-    const errorMessage =
-      error.response?.data?.error || error.response?.data || error.message;
-
-    if (error.response?.status === 409) {
-      throw new Error("Item name already exists. Please use a different name.");
-    } else if (error.response?.status === 412) {
-      throw new Error("Item was modified by another user. Please reload.");
-    }
-
-    toast.error(errorMessage || "Failed to save item");
-    throw new Error(errorMessage || "Failed to save item");
-  }
-};
+  };
 
   // Handle export
   const handleExport = () => {
@@ -278,110 +284,112 @@ const handleSaveItem = async (data: ItemFormData) => {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 } }}>
-      {/* Page Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 700,
-            fontSize: { xs: "1.5rem", sm: "2rem" },
-            color: "#171717",
-            mb: 0.5,
-          }}
-        >
-          Items
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: "#666",
-            fontSize: { xs: "0.875rem", sm: "1rem" },
-          }}
-        >
-          Manage your product and service catalog
-        </Typography>
-      </Box>
-
-      {/* Action Bar */}
-      <Box sx={{ mb: 2 }}>
-        <ActionBar
-          searchText={searchText}
-          onSearchChange={setSearchText}
-          onNewInvoice={handleNewItem}
-          onExport={handleExport}
-          columns={columnVisibility}
-          onColumnVisibilityChange={handleColumnVisibilityChange}
-          totalRecords={filteredItems.length}
-          buttonName="New Item"
-          searchBarPlaceholder="Search items..."
-          isExportDisabled={filteredItems.length === 0 || loading}
-        />
-      </Box>
-
-      {/* Data Grid */}
-      <Box sx={{ height: 600, width: "100%" }}>
-        <ItemDataGrid
-          items={filteredItems}
-          visibleColumns={columnVisibility
-            .filter((c) => c.visible)
-            .map((c) => c.field)}
-          onEdit={handleEditItem}
-          onDelete={handleDeleteItem}
-          loading={loading}
-          searchText={searchText}
-          companyCurrency={companyCurrency}
-        />
-      </Box>
-
-      {/* Item Editor Dialog */}
-      <ItemEditorDialog
-        open={editorOpen}
-        mode={editorMode}
-        itemData={editingItem}
-        onClose={handleCloseEditor}
-        onSave={handleSaveItem}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle sx={{ fontWeight: 600 }}>Delete Item</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete this item? This action cannot be
-            undone.
-          </Typography>
-          <Typography sx={{ mt: 2, color: "#666", fontSize: "0.875rem" }}>
-            Note: Items that are used in invoices cannot be deleted.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button
-            onClick={() => setDeleteDialogOpen(false)}
-            variant="outlined"
-            sx={{ textTransform: "none" }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={confirmDelete}
-            variant="contained"
+    <ItemListErrorBoundary>
+      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+        {/* Page Header */}
+        <Box sx={{ mb: 3 }}>
+          <Typography
+            variant="h4"
             sx={{
-              bgcolor: "#ef4444",
-              "&:hover": { bgcolor: "#dc2626" },
-              textTransform: "none",
+              fontWeight: 700,
+              fontSize: { xs: "1.5rem", sm: "2rem" },
+              color: "#171717",
+              mb: 0.5,
             }}
           >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+            Items
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "#666",
+              fontSize: { xs: "0.875rem", sm: "1rem" },
+            }}
+          >
+            Manage your product and service catalog
+          </Typography>
+        </Box>
+
+        {/* Action Bar */}
+        <Box sx={{ mb: 2 }}>
+          <ActionBar
+            searchText={searchText}
+            onSearchChange={setSearchText}
+            onNewInvoice={handleNewItem}
+            onExport={handleExport}
+            columns={columnVisibility}
+            onColumnVisibilityChange={handleColumnVisibilityChange}
+            totalRecords={filteredItems.length}
+            buttonName="New Item"
+            searchBarPlaceholder="Search items..."
+            isExportDisabled={filteredItems.length === 0 || loading}
+          />
+        </Box>
+
+        {/* Data Grid */}
+        <Box sx={{ height: 600, width: "100%" }}>
+          <ItemDataGrid
+            items={filteredItems}
+            visibleColumns={columnVisibility
+              .filter((c) => c.visible)
+              .map((c) => c.field)}
+            onEdit={handleEditItem}
+            onDelete={handleDeleteItem}
+            loading={loading}
+            searchText={searchText}
+            companyCurrency={companyCurrency}
+          />
+        </Box>
+
+        {/* Item Editor Dialog */}
+        <ItemEditorDialog
+          open={editorOpen}
+          mode={editorMode}
+          itemData={editingItem}
+          onClose={handleCloseEditor}
+          onSave={handleSaveItem}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle sx={{ fontWeight: 600 }}>Delete Item</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to delete this item? This action cannot be
+              undone.
+            </Typography>
+            <Typography sx={{ mt: 2, color: "#666", fontSize: "0.875rem" }}>
+              Note: Items that are used in invoices cannot be deleted.
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, gap: 1 }}>
+            <Button
+              onClick={() => setDeleteDialogOpen(false)}
+              variant="outlined"
+              sx={{ textTransform: "none" }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmDelete}
+              variant="contained"
+              sx={{
+                bgcolor: "#ef4444",
+                "&:hover": { bgcolor: "#dc2626" },
+                textTransform: "none",
+              }}
+            >
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    </ItemListErrorBoundary>
   );
 };
 

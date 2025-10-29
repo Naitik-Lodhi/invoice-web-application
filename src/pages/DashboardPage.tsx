@@ -34,6 +34,7 @@ import { exportInvoicesToExcel } from "../utils/exportData";
 import { useAuth } from "../context/AuthContext";
 import { invoiceService } from "../services/invoiceService";
 import { toast } from "../utils/toast";
+import { DashboardErrorBoundary } from "../error/ErrorBoundary";
 
 // Interfaces
 interface MetricsData {
@@ -601,438 +602,443 @@ const DashboardPage = () => {
 
   return (
     <>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
-        <DashboardGrid
-          invoiceCount={metrics?.invoiceCount || 0}
-          totalAmount={metrics?.totalAmount || 0}
-          companyCurrency={companyCurrency}
-          trend12mData={trend12m}
-          topItemsData={topItems}
-          invoices={filteredInvoices}
-          isLoadingMetrics={isLoadingMetrics}
-          isLoadingList={isLoadingList}
-          isLoadingTrend={isLoadingTrend}
-          isLoadingTopItems={isLoadingTopItems}
-          currentFilter={activeFilter}
-          searchText={searchText}
-          onFilterChange={isMobile ? onFilterChange : undefined}
-          onClearFilter={isMobile ? onClearFilter : undefined}
-          onCustomDateChange={isMobile ? onCustomDateChange : undefined}
-          // Add these new props
-          onTotalAmountClick={handleCustomerCardClick}
-          topCustomers={topCustomers}
-        />
-
-        <Box sx={{ mt: 3, mb: 2 }}>
-          <ActionBar
-            searchText={gridSearchText}
-            onSearchChange={setGridSearchText}
-            onNewInvoice={handleNewInvoice}
-            isNewButtonDisabled={isLoadingList}
-            onExport={handleExport}
-            columns={columnVisibility}
-            onColumnVisibilityChange={handleColumnVisibilityChange}
-            totalRecords={filteredInvoices.length}
-            buttonName="New Invoice"
-            searchBarPlaceholder="Search invoices..."
-            isExportDisabled={filteredInvoices.length === 0 || isLoadingList}
+      <DashboardErrorBoundary>
+        <Box sx={{ p: { xs: 2, sm: 3 } }}>
+          <DashboardGrid
+            invoiceCount={metrics?.invoiceCount || 0}
+            totalAmount={metrics?.totalAmount || 0}
+            companyCurrency={companyCurrency}
+            trend12mData={trend12m}
+            topItemsData={topItems}
+            invoices={filteredInvoices}
+            isLoadingMetrics={isLoadingMetrics}
+            isLoadingList={isLoadingList}
+            isLoadingTrend={isLoadingTrend}
+            isLoadingTopItems={isLoadingTopItems}
+            currentFilter={activeFilter}
+            searchText={searchText}
+            onFilterChange={isMobile ? onFilterChange : undefined}
+            onClearFilter={isMobile ? onClearFilter : undefined}
+            onCustomDateChange={isMobile ? onCustomDateChange : undefined}
+            // Add these new props
+            onTotalAmountClick={handleCustomerCardClick}
+            topCustomers={topCustomers}
           />
-        </Box>
 
-        <Box sx={{ mt: 3 }}>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 2,
-            }}
-          >
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Recent Invoices
-            </Typography>
-            <Button
-              variant="text"
-              onClick={() => (window.location.href = "/invoices")}
-              sx={{ textTransform: "none" }}
-            >
-              View All ({filteredInvoices.length})
-            </Button>
-          </Box>
-
-          <Box sx={{ width: "100%" }}>
-            <InvoiceDataGrid
-              invoices={dashboardInvoices}
-              visibleColumns={columnVisibility
-                .filter((c) => c.visible)
-                .map((c) => c.field)}
-              onEdit={handleEditInvoice}
-              onPrint={handlePrintInvoice}
-              onDelete={handleDeleteInvoice}
-              onPrintMultiple={handlePrintMultiple} // NEW
-              loading={isLoadingList}
+          <Box sx={{ mt: 3, mb: 2 }}>
+            <ActionBar
               searchText={gridSearchText}
-              companyCurrency={companyCurrency}
-              enableSelection={true} // NEW
+              onSearchChange={setGridSearchText}
+              onNewInvoice={handleNewInvoice}
+              isNewButtonDisabled={isLoadingList}
+              onExport={handleExport}
+              columns={columnVisibility}
+              onColumnVisibilityChange={handleColumnVisibilityChange}
+              totalRecords={filteredInvoices.length}
+              buttonName="New Invoice"
+              searchBarPlaceholder="Search invoices..."
+              isExportDisabled={filteredInvoices.length === 0 || isLoadingList}
             />
           </Box>
+
+          <Box sx={{ mt: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Recent Invoices
+              </Typography>
+              <Button
+                variant="text"
+                onClick={() => (window.location.href = "/invoices")}
+                sx={{ textTransform: "none" }}
+              >
+                View All ({filteredInvoices.length})
+              </Button>
+            </Box>
+
+            <Box sx={{ width: "100%" }}>
+              <InvoiceDataGrid
+                invoices={dashboardInvoices}
+                visibleColumns={columnVisibility
+                  .filter((c) => c.visible)
+                  .map((c) => c.field)}
+                onEdit={handleEditInvoice}
+                onPrint={handlePrintInvoice}
+                onDelete={handleDeleteInvoice}
+                onPrintMultiple={handlePrintMultiple} // NEW
+                loading={isLoadingList}
+                searchText={gridSearchText}
+                companyCurrency={companyCurrency}
+                enableSelection={true} // NEW
+              />
+            </Box>
+          </Box>
         </Box>
-      </Box>
 
-      <InvoiceEditor
-        open={editorOpen}
-        mode={editorMode}
-        invoiceId={editingInvoiceId}
-        onClose={handleCloseEditor}
-        onSave={handleSaveInvoice}
-        companyCurrency={companyCurrency}
-        nextInvoiceNumber={nextInvoiceNumber}
-      />
+        <InvoiceEditor
+          open={editorOpen}
+          mode={editorMode}
+          invoiceId={editingInvoiceId}
+          onClose={handleCloseEditor}
+          onSave={handleSaveInvoice}
+          companyCurrency={companyCurrency}
+          nextInvoiceNumber={nextInvoiceNumber}
+        />
 
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle sx={{ fontWeight: 600 }}>Delete Invoice</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete this invoice? This action cannot be
-            undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined">
-            Cancel
-          </Button>
-          <Button
-            onClick={confirmDelete}
-            variant="contained"
-            sx={{ bgcolor: "#ef4444", "&:hover": { bgcolor: "#dc2626" } }}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle sx={{ fontWeight: 600 }}>Delete Invoice</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to delete this invoice? This action cannot
+              be undone.
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, gap: 1 }}>
+            <Button
+              onClick={() => setDeleteDialogOpen(false)}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmDelete}
+              variant="contained"
+              sx={{ bgcolor: "#ef4444", "&:hover": { bgcolor: "#dc2626" } }}
+            >
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-      {/* Top Customers Modal */}
-      <Modal
-        open={customerModalOpen}
-        onClose={handleCustomerModalClose}
-        aria-labelledby="top-customers-modal"
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Paper
+        {/* Top Customers Modal */}
+        <Modal
+          open={customerModalOpen}
+          onClose={handleCustomerModalClose}
+          aria-labelledby="top-customers-modal"
           sx={{
-            width: { xs: "95%", sm: "90%", md: "70%", lg: "60%" },
-            maxWidth: "800px",
-            maxHeight: "90vh",
-            overflow: "auto",
-            p: { xs: 2, sm: 3, md: 4 },
-            position: "relative",
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          {/* Close Button */}
-          <IconButton
-            onClick={handleCustomerModalClose}
+          <Paper
             sx={{
-              position: "absolute",
-              top: 8,
-              right: 8,
-              bgcolor: "rgba(0,0,0,0.05)",
-              "&:hover": {
-                bgcolor: "rgba(0,0,0,0.1)",
-              },
+              width: { xs: "95%", sm: "90%", md: "70%", lg: "60%" },
+              maxWidth: "800px",
+              maxHeight: "90vh",
+              overflow: "auto",
+              p: { xs: 2, sm: 3, md: 4 },
+              position: "relative",
+              bgcolor: "background.paper",
+              borderRadius: 2,
+              boxShadow: 24,
             }}
           >
-            <CloseIcon />
-          </IconButton>
+            {/* Close Button */}
+            <IconButton
+              onClick={handleCustomerModalClose}
+              sx={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                bgcolor: "rgba(0,0,0,0.05)",
+                "&:hover": {
+                  bgcolor: "rgba(0,0,0,0.1)",
+                },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
 
-          {/* Modal Header */}
-          <Typography
-            variant="h5"
-            sx={{
-              mb: 1,
-              fontWeight: 600,
-              pr: 5,
-            }}
-          >
-            👥 Top 5 Customers
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Contribution to total revenue ({activeFilter})
-          </Typography>
+            {/* Modal Header */}
+            <Typography
+              variant="h5"
+              sx={{
+                mb: 1,
+                fontWeight: 600,
+                pr: 5,
+              }}
+            >
+              👥 Top 5 Customers
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Contribution to total revenue ({activeFilter})
+            </Typography>
 
-          {topCustomers.length > 0 ? (
-            <>
-              {/* Stats Summary */}
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 3,
-                  mb: 4,
-                  flexWrap: "wrap",
-                }}
-              >
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Total from Top 5
-                  </Typography>
-                  <Typography variant="h6" fontWeight={600}>
-                    {companyCurrency}
-                    {topCustomers
-                      .reduce((sum, c) => sum + c.amount, 0)
-                      .toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Average per Customer
-                  </Typography>
-                  <Typography variant="h6" fontWeight={600}>
-                    {companyCurrency}
-                    {(
-                      topCustomers.reduce((sum, c) => sum + c.amount, 0) /
-                      topCustomers.length
-                    ).toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Coverage
-                  </Typography>
-                  <Typography variant="h6" fontWeight={600}>
-                    {topCustomers
-                      .reduce((sum, c) => sum + c.percentage, 0)
-                      .toFixed(1)}
-                    %
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Customer List with Progress Bars */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle1" fontWeight={600} mb={2}>
-                  Customer Breakdown
-                </Typography>
-                <List sx={{ p: 0 }}>
-                  {topCustomers.map((customer, index) => (
-                    <Box key={index}>
-                      <ListItem
-                        sx={{
-                          px: 0,
-                          py: 2,
-                          flexDirection: "column",
-                          alignItems: "stretch",
-                        }}
-                      >
-                        {/* Customer Header */}
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            width: "100%",
-                            mb: 1,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1.5,
-                            }}
-                          >
-                            {/* Rank Badge */}
-                            <Box
-                              sx={{
-                                minWidth: 36,
-                                height: 36,
-                                borderRadius: "50%",
-                                bgcolor:
-                                  index === 0
-                                    ? "#fbbf24"
-                                    : index === 1
-                                    ? "#669bebff"
-                                    : index === 2
-                                    ? "#c5f613ff"
-                                    : index === 3
-                                    ? "#d1ddf6ff"
-                                    : "#58e4d9ff",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontWeight: 700,
-                                fontSize: "0.875rem",
-                                color: index < 3 ? "#fff" : "#374151",
-                                boxShadow:
-                                  index < 3
-                                    ? "0 2px 8px rgba(0,0,0,0.15)"
-                                    : "none",
-                              }}
-                            >
-                              #{index + 1}
-                            </Box>
-
-                            {/* Customer Name */}
-                            <Box>
-                              <Typography
-                                variant="body1"
-                                sx={{ fontWeight: 600 }}
-                              >
-                                {customer.name}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                {customer.percentage.toFixed(1)}% of total
-                                revenue
-                              </Typography>
-                            </Box>
-                          </Box>
-
-                          {/* Amount */}
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              fontWeight: 700,
-                              color: theme.palette.primary.main,
-                            }}
-                          >
-                            {companyCurrency}
-                            {formatNumber(customer.amount)}
-                          </Typography>
-                        </Box>
-                      </ListItem>
-                      {index < topCustomers.length - 1 && (
-                        <Divider sx={{ my: 0.5 }} />
-                      )}
-                    </Box>
-                  ))}
-                </List>
-              </Box>
-
-              {/* Customer Cards Grid */}
-              <Box>
-                <Typography variant="subtitle1" fontWeight={600} mb={2}>
-                  Quick Overview
-                </Typography>
+            {topCustomers.length > 0 ? (
+              <>
+                {/* Stats Summary */}
                 <Box
                   sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                      xs: "1fr",
-                      sm: "repeat(2, 1fr)",
-                      md: "repeat(3, 1fr)",
-                    },
-                    gap: 2,
+                    display: "flex",
+                    gap: 3,
+                    mb: 4,
+                    flexWrap: "wrap",
                   }}
                 >
-                  {topCustomers.slice(0, 3).map((customer, index) => (
-                    <Paper
-                      key={index}
-                      sx={{
-                        p: 2,
-                        bgcolor:
-                          index === 0
-                            ? "rgba(251, 191, 36, 0.1)"
-                            : index === 1
-                            ? "rgba(156, 163, 175, 0.1)"
-                            : "rgba(249, 115, 22, 0.1)",
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        position: "relative",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {/* Rank Badge in Corner */}
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          top: -10,
-                          right: -10,
-                          width: 60,
-                          height: 60,
-                          bgcolor:
-                            index === 0
-                              ? "#fbbf24"
-                              : index === 1
-                              ? "#669bebff"
-                              : "#c5f613ff",
-                          borderRadius: "50%",
-                          opacity: 0.2,
-                        }}
-                      />
-
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: "block", mb: 0.5 }}
-                      >
-                        #{index + 1} Customer
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        fontWeight={600}
-                        sx={{ mb: 1 }}
-                      >
-                        {customer.name}
-                      </Typography>
-                      <Typography variant="h6" fontWeight={700}>
-                        {companyCurrency}
-                        {customer.amount.toLocaleString("en-US", {
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Total from Top 5
+                    </Typography>
+                    <Typography variant="h6" fontWeight={600}>
+                      {companyCurrency}
+                      {topCustomers
+                        .reduce((sum, c) => sum + c.amount, 0)
+                        .toLocaleString("en-US", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
-                      </Typography>
-                      <Box
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Average per Customer
+                    </Typography>
+                    <Typography variant="h6" fontWeight={600}>
+                      {companyCurrency}
+                      {(
+                        topCustomers.reduce((sum, c) => sum + c.amount, 0) /
+                        topCustomers.length
+                      ).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Coverage
+                    </Typography>
+                    <Typography variant="h6" fontWeight={600}>
+                      {topCustomers
+                        .reduce((sum, c) => sum + c.percentage, 0)
+                        .toFixed(1)}
+                      %
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Customer List with Progress Bars */}
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle1" fontWeight={600} mb={2}>
+                    Customer Breakdown
+                  </Typography>
+                  <List sx={{ p: 0 }}>
+                    {topCustomers.map((customer, index) => (
+                      <Box key={index}>
+                        <ListItem
+                          sx={{
+                            px: 0,
+                            py: 2,
+                            flexDirection: "column",
+                            alignItems: "stretch",
+                          }}
+                        >
+                          {/* Customer Header */}
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              width: "100%",
+                              mb: 1,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1.5,
+                              }}
+                            >
+                              {/* Rank Badge */}
+                              <Box
+                                sx={{
+                                  minWidth: 36,
+                                  height: 36,
+                                  borderRadius: "50%",
+                                  bgcolor:
+                                    index === 0
+                                      ? "#fbbf24"
+                                      : index === 1
+                                      ? "#669bebff"
+                                      : index === 2
+                                      ? "#c5f613ff"
+                                      : index === 3
+                                      ? "#d1ddf6ff"
+                                      : "#58e4d9ff",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontWeight: 700,
+                                  fontSize: "0.875rem",
+                                  color: index < 3 ? "#fff" : "#374151",
+                                  boxShadow:
+                                    index < 3
+                                      ? "0 2px 8px rgba(0,0,0,0.15)"
+                                      : "none",
+                                }}
+                              >
+                                #{index + 1}
+                              </Box>
+
+                              {/* Customer Name */}
+                              <Box>
+                                <Typography
+                                  variant="body1"
+                                  sx={{ fontWeight: 600 }}
+                                >
+                                  {customer.name}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  {customer.percentage.toFixed(1)}% of total
+                                  revenue
+                                </Typography>
+                              </Box>
+                            </Box>
+
+                            {/* Amount */}
+                            <Typography
+                              variant="h6"
+                              sx={{
+                                fontWeight: 700,
+                                color: theme.palette.primary.main,
+                              }}
+                            >
+                              {companyCurrency}
+                              {formatNumber(customer.amount)}
+                            </Typography>
+                          </Box>
+                        </ListItem>
+                        {index < topCustomers.length - 1 && (
+                          <Divider sx={{ my: 0.5 }} />
+                        )}
+                      </Box>
+                    ))}
+                  </List>
+                </Box>
+
+                {/* Customer Cards Grid */}
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={600} mb={2}>
+                    Quick Overview
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: {
+                        xs: "1fr",
+                        sm: "repeat(2, 1fr)",
+                        md: "repeat(3, 1fr)",
+                      },
+                      gap: 2,
+                    }}
+                  >
+                    {topCustomers.slice(0, 3).map((customer, index) => (
+                      <Paper
+                        key={index}
                         sx={{
-                          mt: 1,
-                          pt: 1,
-                          borderTop: "1px solid",
+                          p: 2,
+                          bgcolor:
+                            index === 0
+                              ? "rgba(251, 191, 36, 0.1)"
+                              : index === 1
+                              ? "rgba(156, 163, 175, 0.1)"
+                              : "rgba(249, 115, 22, 0.1)",
+                          border: "1px solid",
                           borderColor: "divider",
+                          borderRadius: 2,
+                          position: "relative",
+                          overflow: "hidden",
                         }}
                       >
-                        <Typography variant="caption" color="text.secondary">
-                          {customer.percentage.toFixed(1)}% contribution
+                        {/* Rank Badge in Corner */}
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            top: -10,
+                            right: -10,
+                            width: 60,
+                            height: 60,
+                            bgcolor:
+                              index === 0
+                                ? "#fbbf24"
+                                : index === 1
+                                ? "#669bebff"
+                                : "#c5f613ff",
+                            borderRadius: "50%",
+                            opacity: 0.2,
+                          }}
+                        />
+
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block", mb: 0.5 }}
+                        >
+                          #{index + 1} Customer
                         </Typography>
-                      </Box>
-                    </Paper>
-                  ))}
+                        <Typography
+                          variant="body1"
+                          fontWeight={600}
+                          sx={{ mb: 1 }}
+                        >
+                          {customer.name}
+                        </Typography>
+                        <Typography variant="h6" fontWeight={700}>
+                          {companyCurrency}
+                          {customer.amount.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </Typography>
+                        <Box
+                          sx={{
+                            mt: 1,
+                            pt: 1,
+                            borderTop: "1px solid",
+                            borderColor: "divider",
+                          }}
+                        >
+                          <Typography variant="caption" color="text.secondary">
+                            {customer.percentage.toFixed(1)}% contribution
+                          </Typography>
+                        </Box>
+                      </Paper>
+                    ))}
+                  </Box>
                 </Box>
+              </>
+            ) : (
+              <Box sx={{ py: 6, textAlign: "center" }}>
+                <PersonIcon
+                  sx={{ fontSize: 64, color: "text.disabled", mb: 2 }}
+                />
+                <Typography color="text.secondary" variant="body1">
+                  No customer data available
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Data will appear once invoices are created
+                </Typography>
               </Box>
-            </>
-          ) : (
-            <Box sx={{ py: 6, textAlign: "center" }}>
-              <PersonIcon
-                sx={{ fontSize: 64, color: "text.disabled", mb: 2 }}
-              />
-              <Typography color="text.secondary" variant="body1">
-                No customer data available
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Data will appear once invoices are created
-              </Typography>
-            </Box>
-          )}
-        </Paper>
-      </Modal>
+            )}
+          </Paper>
+        </Modal>
+      </DashboardErrorBoundary>
     </>
   );
 };
