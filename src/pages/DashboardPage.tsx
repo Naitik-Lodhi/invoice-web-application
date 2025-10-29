@@ -10,7 +10,6 @@ import {
   DialogActions,
   Button,
   Paper,
-  LinearProgress,
   IconButton,
   Modal,
 } from "@mui/material";
