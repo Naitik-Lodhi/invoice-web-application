@@ -159,20 +159,25 @@ const InvoiceDataGrid = ({
         flex: isMobile ? 1 : 0.8,
         minWidth: isMobile ? 90 : 120,
         renderCell: (params: GridRenderCellParams) => (
-          <Typography
-            sx={{
-              fontWeight: 600,
-              fontSize: isMobile ? "0.75rem" : isTablet ? "0.8rem" : "0.875rem",
-              color: "#171717",
-              cursor: !isMobile ? "pointer" : undefined,
-              mt: 2.5,
-              "&:hover": !isMobile
-                ? { color: "#000", textDecoration: "underline" }
-                : undefined,
-            }}
-          >
-            {isMobile ? params.value?.replace("INV-", "#") : params.value}
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
+            <Typography
+              sx={{
+                fontWeight: 600,
+                fontSize: isMobile
+                  ? "0.75rem"
+                  : isTablet
+                  ? "0.8rem"
+                  : "0.875rem",
+                color: "#171717",
+                cursor: !isMobile ? "pointer" : undefined,
+                "&:hover": !isMobile
+                  ? { color: "#000", textDecoration: "underline" }
+                  : undefined,
+              }}
+            >
+              {isMobile ? params.value?.replace("INV-", "#") : params.value}
+            </Typography>
+          </Box>
         ),
       },
       date: {
@@ -188,20 +193,25 @@ const InvoiceDataGrid = ({
         flex: isMobile ? 1.2 : 1,
         minWidth: isMobile ? 80 : 150,
         renderCell: (params: GridRenderCellParams) => (
-          <Typography
-            sx={{
-              fontSize: isMobile ? "0.7rem" : isTablet ? "0.8rem" : "0.875rem",
-              fontWeight: !isMobile ? 500 : undefined,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              mt: 2.5,
-            }}
-          >
-            {isMobile && params.value?.length > 15
-              ? params.value?.split(" ")[0]
-              : params.value}
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
+            <Typography
+              sx={{
+                fontSize: isMobile
+                  ? "0.7rem"
+                  : isTablet
+                  ? "0.8rem"
+                  : "0.875rem",
+                fontWeight: !isMobile ? 500 : undefined,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {isMobile && params.value?.length > 15
+                ? params.value?.split(" ")[0]
+                : params.value}
+            </Typography>
+          </Box>
         ),
       },
       items: {
@@ -295,16 +305,21 @@ const InvoiceDataGrid = ({
         align: "right",
         headerAlign: "right",
         renderCell: (params: GridRenderCellParams) => (
-          <Typography
-            sx={{
-              fontWeight: 600,
-              fontSize: isMobile ? "0.75rem" : isTablet ? "0.85rem" : "0.95rem",
-              color: "#171717",
-              mt: 2.5,
-            }}
-          >
-            {formatCurrency(params.row.total || 0)}
-          </Typography>
+          <Box sx={{ display: "flex",justifyContent:"end", alignItems: "center", height: "100%" }}>
+            <Typography
+              sx={{
+                fontWeight: 600,
+                fontSize: isMobile
+                  ? "0.75rem"
+                  : isTablet
+                  ? "0.85rem"
+                  : "0.95rem",
+                color: "#171717",
+              }}
+            >
+              {formatCurrency(params.row.total || 0)}
+            </Typography>
+          </Box>
         ),
       },
       actions: {

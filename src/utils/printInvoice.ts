@@ -583,7 +583,6 @@ export const printMultipleInvoices = async (
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Print Invoices</title>
       <style>
         * {
           margin: 0;
@@ -790,7 +789,11 @@ export const printMultipleInvoices = async (
     </html>
   `;
 
-  const printWindow = window.open("", "PRINT", "width=900,height=800");
+  const printWindow = window.open(
+    "invoicePrint",
+    "PRINT",
+    "width=900,height=800"
+  );
 
   if (printWindow) {
     printWindow.document.write(printHTML);

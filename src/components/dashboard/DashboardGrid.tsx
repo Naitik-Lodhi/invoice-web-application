@@ -20,6 +20,7 @@ import type { Dayjs } from "dayjs";
 import StatCard from "./StatCard";
 import TrendChart from "./TrendChart";
 import TopItemsChart from "./TopItemsChart";
+import type { TopItemsData } from "../../pages/DashboardPage";
 
 // Helper function to format numbers
 const formatNumber = (num: number) => {
@@ -34,7 +35,7 @@ interface DashboardGridProps {
 
   // Chart data
   trend12mData: any;
-  topItemsData: any;
+  topItemsData: TopItemsData;
 
   // Grid data
   invoices: any[];

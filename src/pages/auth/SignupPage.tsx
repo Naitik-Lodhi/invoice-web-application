@@ -36,7 +36,7 @@ const SignupPage = () => {
       city: "",
       zipCode: "",
       industry: "",
-      currencySymbol: "₹",
+      currencySymbol: "",
       companyLogo: undefined,
     },
   });

@@ -50,8 +50,8 @@ interface TrendData {
   months: { month: string; amount: number; count: number }[];
 }
 
-interface TopItemsData {
-  items: { name: string; value: number; quantity: number }[];
+export interface TopItemsData {
+  items: { name: string; value: number; itemID: number }[];
 }
 
 interface OutletContextType {
@@ -498,12 +498,12 @@ const DashboardPage = () => {
 
         // Process top items (Card 4)
         if (topItemsData && Array.isArray(topItemsData)) {
-          const formattedItems = topItemsData
+          const formattedItems:any = topItemsData
             .filter((item) => item.itemName !== "Others")
             .map((item) => ({
               name: item.itemName || "Unknown",
               value: item.amountSum,
-              quantity: 0,
+              index:item.itemID
             }));
           setTopItems({ items: formattedItems });
         } else {

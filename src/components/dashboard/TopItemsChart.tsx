@@ -16,7 +16,7 @@ interface TopItemsChartProps {
   data: Array<{
     name: string;
     value: number;
-    quantity: number;
+    itemID: number;
   }>;
   currencySymbol: string;
   currentFilter: string;
@@ -36,16 +36,14 @@ const TopItemsChart = ({
   const [selectedItem, setSelectedItem] = useState<{
     name: string;
     value: number;
-    quantity: number;
-  } | null>(null);
+    itemID: number;
+  }>();
 
   // Prepare data for MUI PieChart with original item reference
-  const pieData = data.map((item, index) => ({
-    id: index,
+  const pieData = data.map((item) => ({
+    id: item.itemID,
     value: item.value,
     label: item.name,
-    quantity: item.quantity,
-    originalData: item, // Keep reference to original item
   }));
 
   // Calculate dimensions
@@ -53,7 +51,7 @@ const TopItemsChart = ({
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
-    setSelectedItem(null);
+    setSelectedItem(undefined);
   };
 
   // Handle click on the entire chart area
@@ -171,7 +169,7 @@ const TopItemsChart = ({
         <DetailedViewDialog
           open={dialogOpen}
           onClose={handleCloseDialog}
-          selectedItem={selectedItem}
+          selectedItem={selectedItem as any}
           allItems={data}
           currencySymbol={currencySymbol}
           currentFilter={currentFilter}

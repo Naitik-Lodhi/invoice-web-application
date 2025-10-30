@@ -1,4 +1,4 @@
-// src/components/invoice/InvoiceEditor.tsx
+// src/components/invoice/InvoiceEditor.tsx - COMPLETE WITH NO SCROLL FIX
 import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
@@ -51,7 +51,6 @@ export interface InvoiceFormData {
   updatedOn?: string;
 }
 
-// ✅ API payload (string date for backend)
 export interface InvoicePayload {
   invoiceNo: string;
   invoiceDate: string;
@@ -95,11 +94,8 @@ const InvoiceEditor = ({
   const [concurrencyError, setConcurrencyError] = useState(false);
   const [availableItems, setAvailableItems] = useState<any[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
-
-  // ✅ NEW: State to track current updatedOn
   const [currentUpdatedOn, setCurrentUpdatedOn] = useState<string | null>(null);
 
-  // Default values function
   const getDefaultValues = (): InvoiceFormData => ({
     invoiceNo: "",
     invoiceDate: new Date(),
@@ -114,7 +110,6 @@ const InvoiceEditor = ({
     invoiceAmount: 0,
   });
 
-  // Form control
   const {
     control,
     handleSubmit,
@@ -127,7 +122,6 @@ const InvoiceEditor = ({
     defaultValues: getDefaultValues(),
   });
 
-  // Watch for changes in edit mode
   useEffect(() => {
     if (mode === "edit" && invoiceId) {
       const subscription = watch(() => {
@@ -137,13 +131,10 @@ const InvoiceEditor = ({
     }
   }, [watch, mode, invoiceId]);
 
-  // Load available items
   useEffect(() => {
     const fetchItems = async () => {
       try {
         const items = await itemService.getList();
-        console.log("📦 Full items from backend:", items);
-
         const transformed = items.map((item) => ({
           id: String(item.itemID),
           name: item.itemName,
@@ -151,8 +142,6 @@ const InvoiceEditor = ({
           rate: item.salesRate || 0,
           discountPct: item.discountPct || 0,
         }));
-
-        console.log("🔄 Transformed items with rates:", transformed);
         setAvailableItems(transformed);
       } catch (error) {
         console.error("Failed to load items:", error);
@@ -165,27 +154,13 @@ const InvoiceEditor = ({
     }
   }, [open]);
 
-  // Load invoice for editing
   const getInvoiceById = useCallback(async () => {
     if (mode !== "edit" || !invoiceId || !open) return;
 
     try {
       const response = await invoiceService.getById(invoiceId as any);
-      console.log("📦 FULL GET Response:", response);
-      console.log("📦 All fields in response:", Object.keys(response));
-      console.log("📦 updatedOn value:", response.updatedOn);
-      console.log("📦 UpdatedOn value:", response.updatedOn); // Capital U?
-      console.log("📦 updatedon value:", response.updatedOn); // lowercase?
-      console.log("📦 updatedOnPrev value:", response.updatedOn);
-
-      // ✅ IMPORTANT: Store updatedOn for concurrency control
-      console.log("📄 Invoice loaded:", {
-        invoiceID: response.invoiceID,
-        updatedOn: response.updatedOn,
-      });
       setCurrentUpdatedOn(response.updatedOn || null);
 
-      // Map line items with proper item names
       const items: LineItem[] = (response.lines || []).map((li, idx) => {
         const quantity = Number(li.quantity || 0);
         const rate = Number(li.rate || 0);
@@ -211,7 +186,6 @@ const InvoiceEditor = ({
         };
       });
 
-      // Date handling - preserve original date
       const invoiceDate = response.invoiceDate
         ? dayjs(response.invoiceDate).toDate()
         : new Date();
@@ -238,14 +212,12 @@ const InvoiceEditor = ({
     }
   }, [mode, invoiceId, open, reset, availableItems]);
 
-  // Load invoice when available items are ready
   useEffect(() => {
     if (open && mode === "edit" && invoiceId && availableItems.length > 0) {
       getInvoiceById();
     }
   }, [open, mode, invoiceId, availableItems, getInvoiceById]);
 
-  // Reset form for new invoice
   useEffect(() => {
     if (open && mode === "new") {
       reset(getDefaultValues());
@@ -263,22 +235,19 @@ const InvoiceEditor = ({
       ]);
       setValue("invoiceNo", String(nextInvoiceNumber));
       setHasChanges(false);
-      setCurrentUpdatedOn(null); // ✅ Clear updatedOn for new invoice
+      setCurrentUpdatedOn(null);
     }
   }, [open, mode, nextInvoiceNumber, reset, setValue]);
 
-  // Watch required fields
   const customerName = watch("customerName");
   const invoiceNo = watch("invoiceNo");
   const invoiceDate = watch("invoiceDate");
   const taxPercent = watch("taxPercent") || 0;
   const taxAmount = watch("taxAmount") || 0;
 
-  // Calculate totals
   const subTotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
   const invoiceAmount = subTotal + taxAmount;
 
-  // Update form values when line items change
   useEffect(() => {
     setValue("subTotal", subTotal);
     if (taxPercent > 0 && subTotal > 0) {
@@ -288,12 +257,10 @@ const InvoiceEditor = ({
     }
   }, [subTotal, setValue, taxPercent]);
 
-  // Update invoice amount
   useEffect(() => {
     setValue("invoiceAmount", invoiceAmount);
   }, [invoiceAmount, setValue]);
 
-  // Tax handlers
   const handleTaxPercentChange = (value: number) => {
     const newTaxPercent = Math.max(0, Math.min(100, value));
     setValue("taxPercent", newTaxPercent);
@@ -320,7 +287,6 @@ const InvoiceEditor = ({
     }
   };
 
-  // Validation
   const hasValidLineItems = lineItems.some(
     (item) =>
       item.itemId && item.itemName && item.quantity > 0 && item.rate >= 0
@@ -336,7 +302,6 @@ const InvoiceEditor = ({
     (mode === "new" || hasChanges) &&
     !saving;
 
-  // Handle save
   const onSubmit = async (data: InvoiceFormData) => {
     if (!customerName || customerName.trim().length === 0) {
       toast.error("Customer name is required");
@@ -369,34 +334,17 @@ const InvoiceEditor = ({
         updatedOn: mode === "edit" ? currentUpdatedOn : null,
       };
 
-      console.log("💾 Submitting payload:", {
-        mode,
-        invoiceId,
-        currentUpdatedOn,
-        updatedOnPrev: payload.updatedOn,
-      });
-
       const result = await onSave(payload);
 
-      console.log("✅ Save completed, result:", result);
-
-      // ✅ CRITICAL: Update state with new updatedOn
       if (result?.updatedOn) {
-        console.log("🔄 Updating updatedOn:", {
-          old: currentUpdatedOn,
-          new: result.updatedOn,
-        });
         setCurrentUpdatedOn(result.updatedOn);
         setHasChanges(false);
 
         if (mode === "edit") {
           toast.success("Invoice updated successfully");
         }
-      } else {
-        console.warn("⚠️ No updatedOn in result:", result);
       }
 
-      // Close editor for new invoices
       if (mode === "new") {
         reset(getDefaultValues());
         setLineItems([]);
@@ -411,7 +359,6 @@ const InvoiceEditor = ({
         toast.error(
           error.message || "This record was modified by someone else"
         );
-        // Reload invoice to get latest data
         if (mode === "edit") {
           await getInvoiceById();
         }
@@ -423,17 +370,15 @@ const InvoiceEditor = ({
     }
   };
 
-  // Handle close
   const handleClose = () => {
     reset(getDefaultValues());
     setLineItems([]);
     setHasChanges(false);
     setConcurrencyError(false);
-    setCurrentUpdatedOn(null); // ✅ Clear updatedOn on close
+    setCurrentUpdatedOn(null);
     onClose();
   };
 
-  // Keyboard shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key === "Enter" && isFormValid) {
@@ -460,7 +405,8 @@ const InvoiceEditor = ({
         fullScreen={isMobile}
         PaperProps={{
           sx: {
-            height: isMobile ? "100vh" : "90vh",
+            // ✅ CRITICAL: Remove fixed height
+            // Let dialog grow naturally with content
             maxHeight: isMobile ? "100vh" : "90vh",
             m: isMobile ? 0 : 2,
           },
@@ -526,15 +472,13 @@ const InvoiceEditor = ({
           </Toolbar>
         </AppBar>
 
-        {/* Content - NO SCROLL */}
+        {/* ✅ CRITICAL: Content with natural scroll */}
         <DialogContent
           sx={{
             p: { xs: 1, sm: 2 },
             backgroundColor: "#fafafa",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden", // ✅ No scroll on main container
-            height: "calc(100% - 64px)", // Account for header
+            // ✅ No overflow or height restrictions
+            // Dialog will scroll naturally when content is long
           }}
         >
           <Box
@@ -542,12 +486,12 @@ const InvoiceEditor = ({
               display: "flex",
               flexDirection: "column",
               gap: { xs: 1, sm: 2 },
-              height: "100%",
-              overflow: "hidden",
+              // ✅ No height or overflow restrictions
+              // Let it grow with content
             }}
           >
-            {/* 1. Invoice Details - Compact */}
-            <Box sx={{ flexShrink: 0 }}>
+            {/* 1. Invoice Details */}
+            <Box>
               <InvoiceDetailsSection
                 control={control}
                 errors={errors}
@@ -555,14 +499,8 @@ const InvoiceEditor = ({
               />
             </Box>
 
-            {/* 2. Line Items - Scrollable Section */}
-            <Box
-              sx={{
-                flex: 1,
-                overflow: "auto", // ✅ Only line items scroll
-                minHeight: 0,
-              }}
-            >
+            {/* 2. Line Items - Will grow naturally */}
+            <Box>
               <LineItemsGrid
                 lineItems={lineItems}
                 setLineItems={setLineItems}
@@ -572,8 +510,8 @@ const InvoiceEditor = ({
               />
             </Box>
 
-            {/* 3. Totals Panel - Compact & Fixed */}
-            <Box sx={{ flexShrink: 0 }}>
+            {/* 3. Totals Panel */}
+            <Box>
               <TotalsPanel
                 subTotal={subTotal}
                 taxPercent={taxPercent}
@@ -586,11 +524,10 @@ const InvoiceEditor = ({
               />
             </Box>
 
-            {/* Validation Summary - Compact */}
+            {/* Validation Summary */}
             {!isFormValid && (customerName || touchedFields.customerName) && (
               <Box
                 sx={{
-                  flexShrink: 0,
                   p: 1.5,
                   bgcolor: "#fff3cd",
                   borderRadius: 1,
@@ -631,11 +568,10 @@ const InvoiceEditor = ({
               </Box>
             )}
 
-            {/* Concurrency Error - Compact */}
+            {/* Concurrency Error */}
             {concurrencyError && (
               <Box
                 sx={{
-                  flexShrink: 0,
                   p: 1.5,
                   bgcolor: "#fee2e2",
                   borderRadius: 1,
@@ -676,7 +612,6 @@ const InvoiceEditor = ({
             {isMobile && (
               <Box
                 sx={{
-                  flexShrink: 0,
                   display: "flex",
                   gap: 1,
                   pt: 1,

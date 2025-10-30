@@ -1,4 +1,4 @@
-// src/components/invoice/InvoiceDetailsSection.tsx
+// src/components/invoice/InvoiceDetailsSection.tsx - FIXED ALIGNMENT
 import { Box, Typography, Card, CardContent, Grid } from "@mui/material";
 import { type Control, type FieldErrors } from "react-hook-form";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -20,24 +20,25 @@ const InvoiceDetailsSection = ({ control }: InvoiceDetailsSectionProps) => {
     <Card sx={{ boxShadow: 1 }}>
       <CardContent
         sx={{
-          p: { xs: 1.5, sm: 2 },
-          "&:last-child": { pb: { xs: 1.5, sm: 2 } },
+          p: { xs: 2, sm: 2.5 },
+          "&:last-child": { pb: { xs: 2, sm: 2.5 } },
         }}
       >
         <Typography
           variant="subtitle1"
           sx={{
-            mb: 1,
+            mb: 2,
             fontWeight: 600,
-            fontSize: { xs: "0.875rem", sm: "1rem" },
+            fontSize: { xs: "0.9rem", sm: "1rem" },
           }}
         >
           Invoice Details
         </Typography>
 
-        <Grid container spacing={{ xs: 1, sm: 1.5 }}>
-          {/* Invoice No & Date */}
-          <Grid size={{ xs: 6, sm: 3 }}>
+        {/* ✅ FIXED: Proper Grid Layout */}
+        <Grid container spacing={2} justifyContent={"center"} >
+          {/* Row 1: Invoice No & Date */}
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <FormField
               name="invoiceNo"
               control={control}
@@ -48,7 +49,7 @@ const InvoiceDetailsSection = ({ control }: InvoiceDetailsSectionProps) => {
             />
           </Grid>
 
-          <Grid size={{ xs: 6, sm: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }} sx={{pt:"13px"}}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <Controller
                 name="invoiceDate"
@@ -60,9 +61,8 @@ const InvoiceDetailsSection = ({ control }: InvoiceDetailsSectionProps) => {
                       component="label"
                       sx={{
                         display: "block",
-                        mb: 0.5,
                         fontWeight: 500,
-                        fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                        fontSize: { xs: "0.875rem", sm: "0.875rem" },
                       }}
                     >
                       Date <span style={{ color: "red" }}>*</span>
@@ -78,7 +78,7 @@ const InvoiceDetailsSection = ({ control }: InvoiceDetailsSectionProps) => {
                           sx: {
                             "& .MuiOutlinedInput-root": {
                               "& input": {
-                                py: 0.75,
+                                py:1,
                                 fontSize: { xs: "0.875rem", sm: "1rem" },
                               },
                             },
@@ -92,8 +92,8 @@ const InvoiceDetailsSection = ({ control }: InvoiceDetailsSectionProps) => {
             </LocalizationProvider>
           </Grid>
 
-          {/* Customer & City */}
-          <Grid size={{ xs: 12, sm: 3 }}>
+          {/* Row 1: Customer & City */}
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <FormField
               name="customerName"
               control={control}
@@ -105,7 +105,7 @@ const InvoiceDetailsSection = ({ control }: InvoiceDetailsSectionProps) => {
             />
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <FormField
               name="city"
               control={control}
@@ -116,8 +116,8 @@ const InvoiceDetailsSection = ({ control }: InvoiceDetailsSectionProps) => {
             />
           </Grid>
 
-          {/* Address & Notes */}
-          <Grid size={{ xs: 12, sm: 6 }}>
+          {/* Row 2: Address & Notes - Full width on mobile, half on desktop */}
+          <Grid size={{ xs: 12, sm: 12, md: 6 }}>
             <FormField
               name="address"
               control={control}
@@ -127,7 +127,7 @@ const InvoiceDetailsSection = ({ control }: InvoiceDetailsSectionProps) => {
             />
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 12, sm: 12, md: 6 }}>
             <FormField
               name="notes"
               control={control}

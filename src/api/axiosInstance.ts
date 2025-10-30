@@ -12,20 +12,6 @@ const axiosInstance = axios.create({
 // Request interceptor - attach JWT token
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Check both storages for token
-
-    console.log("🚀 Axios Request:");
-    console.log("   Method:", config.method?.toUpperCase());
-    console.log("   URL:", config.url);
-    console.log("   Base URL:", config.baseURL);
-    console.log("   Params:", config.params);
-    console.log("   Full URL:", `${config.baseURL}${config.url}`);
-
-    if (config.url?.includes("GetTrend12m")) {
-      console.log("⚠️ TREND API REQUEST INTERCEPTED:");
-      console.log("   asOf param:", config.params?.asOf);
-      console.log("   Param type:", typeof config.params?.asOf);
-    }
     const token =
       sessionStorage.getItem("token") || localStorage.getItem("token");
 
@@ -42,7 +28,6 @@ axiosInstance.interceptors.request.use(
 // Response interceptor - handle 401 errors
 axiosInstance.interceptors.response.use(
   (response) => {
-    console.log("✅ Axios Response:", response.status, response.config.url);
     return response;
   },
   (error) => {

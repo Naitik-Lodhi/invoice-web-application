@@ -15,7 +15,6 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 
 interface DetailedViewDialogProps {
   open: boolean;
@@ -23,12 +22,12 @@ interface DetailedViewDialogProps {
   selectedItem: {
     name: string;
     value: number;
-    quantity: number;
-  } | null;
+    itemID: number;
+  };
   allItems: Array<{
     name: string;
     value: number;
-    quantity: number;
+    itemID: number;
   }>;
   currencySymbol: string;
   currentFilter: string;
@@ -50,7 +49,6 @@ const DetailedViewDialog = ({
   // Calculate percentage of total
   const totalValue = allItems.reduce((sum, item) => sum + item.value, 0);
   const percentage = ((selectedItem.value / totalValue) * 100).toFixed(1);
-
 
   return (
     <Dialog
@@ -117,7 +115,7 @@ const DetailedViewDialog = ({
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <AttachMoneyIcon color="primary" fontSize="small" />
+              <Typography variant="body1" color="success" fontSize={20}>{currencySymbol}</Typography>
               <Typography variant="caption" color="text.secondary">
                 Total Revenue
               </Typography>
@@ -130,7 +128,6 @@ const DetailedViewDialog = ({
               })}
             </Typography>
           </Box>
-
 
           {/* Market Share */}
           <Box
@@ -162,9 +159,11 @@ const DetailedViewDialog = ({
           </Typography>
           <Box sx={{ mt: 2 }}>
             {allItems.map((item, index) => {
-              const itemPercentage = ((item.value / totalValue) * 100).toFixed(1);
+              const itemPercentage = ((item.value / totalValue) * 100).toFixed(
+                1
+              );
               const isSelected = item.name === selectedItem.name;
-              
+
               return (
                 <Box
                   key={index}
@@ -175,7 +174,9 @@ const DetailedViewDialog = ({
                     py: 1.5,
                     px: 1,
                     borderRadius: 1,
-                    bgcolor: isSelected ? theme.palette.action.selected : "transparent",
+                    bgcolor: isSelected
+                      ? theme.palette.action.selected
+                      : "transparent",
                     "&:hover": {
                       bgcolor: theme.palette.action.hover,
                     },
