@@ -8,6 +8,7 @@ export const API_ENDPOINTS = {
     LOGIN: '/Auth/Login',
     GET_COMPANY_LOGO: (companyId: number) => `/Auth/GetCompanyLogoUrl/${companyId}`,
     GET_COMPANY_LOGO_THUMBNAIL: (companyId: number) => `/Auth/GetCompanyLogoThumbnailUrl/${companyId}`,
+    CHECK_DUPLICATE_EMAIL: '/Auth/CheckDuplicateEmail', // ✅ NEW
   },
 
   // Item endpoints

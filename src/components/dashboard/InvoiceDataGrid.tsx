@@ -156,7 +156,8 @@ const InvoiceDataGrid = ({
       invoiceNumber: {
         field: "invoiceNumber",
         headerName: isMobile ? "Invoice" : "Invoice No",
-        flex: isMobile ? 1 : 0.8,
+        // flex: isMobile ? 1 : 0.8,
+        width: 120,
         minWidth: isMobile ? 90 : 120,
         renderCell: (params: GridRenderCellParams) => (
           <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
@@ -183,14 +184,17 @@ const InvoiceDataGrid = ({
       date: {
         field: "date",
         headerName: "Date",
-        flex: isMobile ? 0.8 : 0.7,
+        // flex: isMobile ? 0.8 : 0.7,
+        width: isMobile ? 90 : 110,
         minWidth: isMobile ? 75 : 100,
         valueFormatter: (value) => formatDate(value),
       },
       customer: {
         field: "customer",
         headerName: "Customer",
-        flex: isMobile ? 1.2 : 1,
+        // flex: isMobile ? 1.2 : 1,
+        // flex: 1,
+        width: 220,
         minWidth: isMobile ? 80 : 150,
         renderCell: (params: GridRenderCellParams) => (
           <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
@@ -217,7 +221,8 @@ const InvoiceDataGrid = ({
       items: {
         field: "items",
         headerName: "Items",
-        flex: 0.5,
+        // flex: 0.5,
+        width: 80,
         minWidth: 60,
         align: "center",
         headerAlign: "center",
@@ -269,7 +274,8 @@ const InvoiceDataGrid = ({
       subTotal: {
         field: "subTotal",
         headerName: isMobile ? "SubTot" : "Sub Total",
-        flex: isMobile ? 0.9 : 0.8,
+        // flex: isMobile ? 0.9 : 0.8,
+        width: 120,
         minWidth: isMobile ? 80 : 110,
         type: "number",
         align: "right",
@@ -279,7 +285,8 @@ const InvoiceDataGrid = ({
       taxPercent: {
         field: "taxPercent",
         headerName: isMobile ? "Tax%" : "Tax %",
-        flex: 0.5,
+        // flex: 0.5,
+        width: 80,
         minWidth: 60,
         type: "number",
         align: "center",
@@ -289,7 +296,8 @@ const InvoiceDataGrid = ({
       taxAmount: {
         field: "taxAmount",
         headerName: isMobile ? "Tax" : isTablet ? "Tax" : "Tax Amt",
-        flex: isMobile ? 0.8 : 0.7,
+        // flex: isMobile ? 0.8 : 0.7,
+        width: 110,
         minWidth: isMobile ? 70 : 90,
         type: "number",
         align: "right",
@@ -299,13 +307,19 @@ const InvoiceDataGrid = ({
       total: {
         field: "total",
         headerName: "Total",
-        flex: isMobile ? 1 : 0.9,
-        minWidth: isMobile ? 90 : 120,
+        width: 140,
         type: "number",
         align: "right",
         headerAlign: "right",
         renderCell: (params: GridRenderCellParams) => (
-          <Box sx={{ display: "flex",justifyContent:"end", alignItems: "center", height: "100%" }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "end",
+              alignItems: "center",
+              height: "100%",
+            }}
+          >
             <Typography
               sx={{
                 fontWeight: 600,
@@ -325,7 +339,8 @@ const InvoiceDataGrid = ({
       actions: {
         field: "actions",
         headerName: "Actions",
-        flex: isMobile ? 1 : 0.8,
+        // flex: isMobile ? 1 : 0.8,
+        width: 120,
         minWidth: isMobile ? 100 : 120,
         maxWidth: 150,
         sortable: false,

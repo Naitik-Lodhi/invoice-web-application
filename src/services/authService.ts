@@ -104,50 +104,50 @@ export const authService = {
     return response.data;
   },
 
-   getCompanyLogo: async (companyId: number): Promise<string> => {
+  getCompanyLogo: async (companyId: number): Promise<string> => {
     try {
       const response = await axiosInstance.get(
         API_ENDPOINTS.auth.GET_COMPANY_LOGO(companyId)
       );
-      
+
       let logoUrl = response.data;
       console.log("📥 Original logo URL:", logoUrl);
-      
-      if (typeof logoUrl === 'string') {
+
+      if (typeof logoUrl === "string") {
         // ✅ Step 1: Replace ALL backslashes (encoded and unencoded)
-        logoUrl = logoUrl.replace(/\\/g, '/').replace(/%5C/gi, '/');
-        
+        logoUrl = logoUrl.replace(/\\/g, "/").replace(/%5C/gi, "/");
+
         // ✅ Step 2: Encode spaces properly
-        if (logoUrl.includes('blob.core.windows.net')) {
+        if (logoUrl.includes("blob.core.windows.net")) {
           try {
             const urlObj = new URL(logoUrl);
-            
+
             // Encode pathname segments individually
-            const pathSegments = urlObj.pathname.split('/');
+            const pathSegments = urlObj.pathname.split("/");
             urlObj.pathname = pathSegments
-              .map(segment => {
+              .map((segment) => {
                 // Skip empty segments and already encoded ones
-                if (!segment || segment.includes('%20')) return segment;
+                if (!segment || segment.includes("%20")) return segment;
                 // Encode spaces and special chars
-                return segment.includes(' ') 
-                  ? encodeURIComponent(segment) 
+                return segment.includes(" ")
+                  ? encodeURIComponent(segment)
                   : segment;
               })
-              .join('/');
-            
+              .join("/");
+
             logoUrl = urlObj.toString();
           } catch (urlError) {
             console.error("URL parsing failed:", urlError);
           }
         }
-        
+
         console.log("🔧 Processed logo URL:", logoUrl);
       }
-      
+
       return logoUrl;
     } catch (error) {
       console.error("❌ Failed to get company logo:", error);
-      return ''; // ✅ Return empty string instead of throwing
+      return ""; // ✅ Return empty string instead of throwing
     }
   },
 
@@ -156,42 +156,42 @@ export const authService = {
       const response = await axiosInstance.get(
         API_ENDPOINTS.auth.GET_COMPANY_LOGO_THUMBNAIL(companyId)
       );
-      
+
       let thumbnailUrl = response.data;
       console.log("📥 Original thumbnail URL:", thumbnailUrl);
-      
-      if (typeof thumbnailUrl === 'string') {
+
+      if (typeof thumbnailUrl === "string") {
         // ✅ Step 1: Replace ALL backslashes
-        thumbnailUrl = thumbnailUrl.replace(/\\/g, '/').replace(/%5C/gi, '/');
-        
+        thumbnailUrl = thumbnailUrl.replace(/\\/g, "/").replace(/%5C/gi, "/");
+
         // ✅ Step 2: Encode spaces properly
-        if (thumbnailUrl.includes('blob.core.windows.net')) {
+        if (thumbnailUrl.includes("blob.core.windows.net")) {
           try {
             const urlObj = new URL(thumbnailUrl);
-            
-            const pathSegments = urlObj.pathname.split('/');
+
+            const pathSegments = urlObj.pathname.split("/");
             urlObj.pathname = pathSegments
-              .map(segment => {
-                if (!segment || segment.includes('%20')) return segment;
-                return segment.includes(' ') 
-                  ? encodeURIComponent(segment) 
+              .map((segment) => {
+                if (!segment || segment.includes("%20")) return segment;
+                return segment.includes(" ")
+                  ? encodeURIComponent(segment)
                   : segment;
               })
-              .join('/');
-            
+              .join("/");
+
             thumbnailUrl = urlObj.toString();
           } catch (urlError) {
             console.error("URL parsing failed:", urlError);
           }
         }
-        
+
         console.log("🔧 Processed thumbnail URL:", thumbnailUrl);
       }
-      
+
       return thumbnailUrl;
     } catch (error) {
       console.error("❌ Failed to get company logo thumbnail:", error);
-      return ''; // ✅ Return empty string
+      return ""; // ✅ Return empty string
     }
   },
 
@@ -208,5 +208,44 @@ export const authService = {
 
   getToken: (): string | null => {
     return localStorage.getItem("token") || sessionStorage.getItem("token");
+  },
+
+
+  checkDuplicateEmail: async (email: string): Promise<boolean> => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.auth.CHECK_DUPLICATE_EMAIL,
+        {
+          params: { Email: email },
+          validateStatus: (status) => {
+            // ✅ Accept both 200 and 409 as valid responses
+            // 409 = Conflict = Email already exists
+            return status === 200 || status === 409;
+          },
+        }
+      );
+
+      // ✅ If status is 409, email is duplicate
+      if (response.status === 409) {
+        return true;
+      }
+
+      // ✅ If status is 200, check response body
+      if (response.status === 200) {
+        const data = response.data;
+
+        if (typeof data === "boolean") {
+          return data;
+        } else if (typeof data === "string") {
+          return data.toLowerCase() === "true";
+        }
+      }
+
+      return false;
+    } catch (error: any) {
+      console.error("❌ Failed to check duplicate email:", error);
+      // Return false to allow form submission if API fails
+      return false;
+    }
   },
 };

@@ -1,5 +1,5 @@
 // src/components/form/SignupForm.tsx
-import { Box, Typography, Link, Alert } from "@mui/material";
+import { Box, Typography, Link, Alert, CircularProgress } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import { type Control, type FieldErrors } from 'react-hook-form';
 
@@ -8,21 +8,26 @@ import FormField from "./FormField";
 import PasswordField from "./PasswordField";
 import FileUploadField from "./FileUploadField";
 import AppButton from "../AppButton";
+import type { SignupFormData } from "../../utils/validationSchemas";
 
 interface SignupFormProps {
-  control: Control<any>;
+  control: Control<SignupFormData>;
   isSubmitting: boolean;
   onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
+  onEmailBlur?: (email: string) => Promise<void>;
   error?: string;
-  errors?: FieldErrors;
+  errors?: FieldErrors<SignupFormData>;
+  isCheckingEmail?: boolean;
 }
 
 export default function SignupForm({ 
   control, 
   isSubmitting, 
   onSubmit, 
+  onEmailBlur,
   error,
-  errors 
+  errors,
+  isCheckingEmail = false
 }: SignupFormProps) {
   return (
    <Box sx={{ maxWidth: "900px", mx: "auto", px: 2, pb: 8 }}>
@@ -31,14 +36,12 @@ export default function SignupForm({
         subtitle="Set up your company and start invoicing in minutes."
       />
 
-      {/* Show general error if exists */}
       {error && (
         <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
           {error}
         </Alert>
       )}
 
-      {/* Show root error from form validation */}
       {errors?.root && (
         <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
           {errors.root.message}
@@ -75,13 +78,30 @@ export default function SignupForm({
               required
               maxLength={50}
             />
+            
             <FormField
               name="email"
               control={control}
               label="Email Address"
               type="email"
               required
+              onBlur={(value) => {
+                if (onEmailBlur) {
+                  onEmailBlur(value);
+                }
+              }}
+              InputProps={{
+                endAdornment: isCheckingEmail ? (
+                  <CircularProgress size={20} sx={{ mr: 1 }} />
+                ) : null,
+              }}
+              helperText={
+                isCheckingEmail 
+                  ? "Checking email availability..." 
+                  : undefined
+              }
             />
+            
             <PasswordField
               name="password"
               control={control}
@@ -137,7 +157,7 @@ export default function SignupForm({
                 name="zipCode"
                 control={control}
                 label="Zip Code"
-                type="text"  // Changed from "number" to "text" for better control
+                type="text"
                 required
                 maxLength={6}
               />
@@ -159,7 +179,6 @@ export default function SignupForm({
           </Box>
         </Box>
 
-        {/* Buttons Section */}
         <Box
           sx={{
             display: "flex",
@@ -172,13 +191,13 @@ export default function SignupForm({
           <Box display="flex" width="100%" justifyContent="flex-end">
             <AppButton
               type="submit"
-              isLoading={isSubmitting}
-              disabled={isSubmitting}
+              isLoading={isSubmitting || isCheckingEmail}
+              disabled={isSubmitting || isCheckingEmail}
               sx={{
                 width: { xs: "100%", sm: "auto" },
               }}
             >
-              Sign Up
+              {isCheckingEmail ? "Checking..." : isSubmitting ? "Creating Account..." : "Sign Up"}
             </AppButton>
           </Box>
           <Typography variant="body2">

@@ -11,17 +11,21 @@ import {
 import SignupForm from "../../components/form/SignupForm";
 import { toast } from "../../utils/toast";
 import type { SignupData } from "../../services/authService";
+import { authService } from "../../services/authService";
 import { AuthErrorBoundary } from "../../error/ErrorBoundary";
+import { VALIDATION_MESSAGES } from "../../constants/messages";
 
 const SignupPage = () => {
   const navigate = useNavigate();
   const { signup } = useAuth();
   const [apiError, setApiError] = useState<string>("");
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   const {
     control,
     handleSubmit,
     setError,
+    clearErrors,
     formState: { isSubmitting, errors },
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -41,8 +45,58 @@ const SignupPage = () => {
     },
   });
 
+  const handleEmailBlur = async (email: string): Promise<void> => {
+    clearErrors("email");
+
+    if (!email || !email.trim()) return;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return;
+
+    setIsCheckingEmail(true);
+
+    try {
+      const isDuplicate = await authService.checkDuplicateEmail(email.trim());
+      
+      if (isDuplicate) {
+        setError("email", {
+          type: "manual",
+          message: VALIDATION_MESSAGES.emailAlreadyExists,
+        });
+        toast.error("This email is already registered!");
+      } else {
+        clearErrors("email");
+      }
+    } catch (error) {
+      console.error("Error checking email:", error);
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
   const onSubmit: SubmitHandler<SignupFormData> = async (data) => {
     setApiError("");
+
+    // Final email check before submission
+    setIsCheckingEmail(true);
+    
+    try {
+      const emailExists = await authService.checkDuplicateEmail(data.email.trim());
+      
+      if (emailExists) {
+        setError("email", {
+          type: "manual",
+          message: VALIDATION_MESSAGES.emailAlreadyExists,
+        });
+        toast.error("Email already registered. Please use a different email.");
+        setIsCheckingEmail(false);
+        return;
+      }
+    } catch (error) {
+      console.error("Final email check failed:", error);
+    } finally {
+      setIsCheckingEmail(false);
+    }
 
     try {
       const signupData: SignupData = {
@@ -63,29 +117,22 @@ const SignupPage = () => {
       toast.success("Account created successfully! Welcome aboard!");
       navigate("/");
     } catch (error: any) {
-      console.error("❌ Signup error:", error);
+      console.error("Signup error:", error);
 
-      // Check for specific error messages from backend
       const errorMessage =
         error.response?.data || error.message || "Signup failed";
 
-      // Handle duplicate email error specifically
       if (
         errorMessage.toLowerCase().includes("email already exists") ||
         errorMessage.toLowerCase().includes("email is already registered") ||
         errorMessage.toLowerCase().includes("duplicate email")
       ) {
-        // Set error on email field specifically
         setError("email", {
           type: "manual",
-          message:
-            "An account with this email already exists. Please use a different email or login.",
+          message: VALIDATION_MESSAGES.emailAlreadyExists,
         });
-
-        // Also show toast
         toast.error("Email already exists. Please use a different email.");
       } else if (error.response?.status === 400) {
-        // Other validation errors
         setError("root", {
           type: "manual",
           message: errorMessage,
@@ -93,7 +140,6 @@ const SignupPage = () => {
         setApiError(errorMessage);
         toast.error(errorMessage);
       } else {
-        // General errors
         setError("root", {
           type: "manual",
           message: "Failed to create account. Please try again.",
@@ -110,8 +156,10 @@ const SignupPage = () => {
         control={control}
         isSubmitting={isSubmitting}
         onSubmit={handleSubmit(onSubmit)}
+        onEmailBlur={handleEmailBlur}
         error={apiError}
         errors={errors}
+        isCheckingEmail={isCheckingEmail}
       />
     </AuthErrorBoundary>
   );

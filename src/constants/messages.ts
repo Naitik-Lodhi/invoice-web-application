@@ -5,6 +5,7 @@ export const VALIDATION_MESSAGES = {
   lastNameRequired: "Please enter your last name.",
   emailRequired: "Please enter a valid email address.",
   emailInvalid: "The email address is not valid.",
+   emailAlreadyExists: "This email is already registered. Please use a different email or login.",
 //   passwordRequired: "Please create a password.",
   passwordMinLength: "Password must be at least 8 characters long.",
   passwordPattern: "Password must include letters and numbers.",
